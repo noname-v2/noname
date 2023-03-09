@@ -4,4 +4,5 @@ node_modules/
 *.map
 .DS_Store
 .sourcemaps
-dist/
+/dist/
+/ios/

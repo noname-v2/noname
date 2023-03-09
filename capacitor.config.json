@@ -2,7 +2,7 @@
   "appId": "com.widget.noname_v2",
   "appName": "noname",
   "bundledWebRuntime": false,
-  "webDir": "dist",
+  "webDir": "dist/capacitor",
   "plugins": {
     "SplashScreen": {
       "launchShowDuration": 0
