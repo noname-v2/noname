@@ -1,0 +1,14 @@
+nn-app {
+    @include layer;
+
+    noname-zoom {
+		position: absolute;
+		left: 0;
+		top: 0;
+		transform-origin: top left;
+		width: var(--zoom-width);
+		height: var(--zoom-height);
+		transform: scale(var(--zoom-scale));
+		@include hollow;
+	}
+}

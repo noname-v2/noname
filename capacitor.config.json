@@ -1,0 +1,11 @@
+{
+  "appId": "com.widget.noname_v2",
+  "appName": "noname",
+  "bundledWebRuntime": false,
+  "webDir": "dist",
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 0
+    }
+  }
+}
