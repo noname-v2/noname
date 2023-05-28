@@ -7,9 +7,10 @@ let currentStage: Stage;
 const api = Object.freeze({
     link: (cid?: string) => hub.link(cid),
     monitor: () => hub.monitor(),
-    await: () => hub.await(),
-    execute: (main: string, props: Dict) => currentStage.progress(main, props)
+    require: () => hub.require(),
+    run: (main: string, props: Dict) => currentStage.progress(main, props)
 });
+
 export type StageAPI = typeof api;
 
 /** Function wrapper for progress backup and restore. */
@@ -56,7 +57,7 @@ class Stage {
     }
 
     /** Execute the main function. */
-    async execute() {
+    async run() {
         const main = lib.get(this.#main);
         if (main) {
             const parentStage = currentStage;
@@ -90,7 +91,7 @@ class Stage {
             this.#history.length = this.#step;
             const stage = new Stage(main, props);
             this.#history.push(stage);
-            await stage.execute();
+            await stage.run();
             this.#step++;
             return stage.result;
         }
@@ -107,5 +108,5 @@ class Stage {
 /** Decorator that creates a stage from a class method. */
 export function createRoot(main: string, props: Dict) {
     currentStage = new Stage(main, props);
-    return currentStage.execute();
+    return currentStage.run();
 }

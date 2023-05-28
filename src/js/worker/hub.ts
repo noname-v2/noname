@@ -36,6 +36,7 @@ class Hub {
     /** Callback function when a client sends a mesage. */
     onmessage(uid: string, message: string | Dict) {
         if (message === 'init') {
+            // client initializes connection
             this.#joined.set(uid, null);
             const changes: Dict = {};
             for (const [cid, data] of this.#dicts) {
@@ -44,6 +45,7 @@ class Hub {
             this.#send(uid, changes);
         }
         else if (message === 'auto') {
+            // client changes stats to auto
             this.#joined.set(uid, 'auto');
         }
         else if (typeof message === 'string') {
@@ -95,7 +97,7 @@ class Hub {
     }
 
     /** Await response from client. */
-    async await() {
+    async require() {
 
     }
 
