@@ -1,3 +1,3 @@
-export const Splash: FC = () => {
-    return <nn-splash>Splash</nn-splash>
+export const Splash: FC = ({fade}) => {
+    return <nn-splash class={'fade-'+fade}>Splash</nn-splash>
 };

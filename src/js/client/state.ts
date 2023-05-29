@@ -1,7 +1,14 @@
+import { ready } from './db';
 import { useState } from "react";
 
+/** Component states. */
 const states = new Map<string, Dict>();
+
+/** React state setter. */
 const setters = new Map<string, React.Dispatch<Dict>>();
+
+/** Components pending update. */
+const pending = new Map<string, number>();
 
 /**
  * Get the state of a worker-created component.
@@ -23,6 +30,8 @@ export function getState(props: Dict = {}): Dict {
  * @param {Dict} diff - Changed to the component state.
  */
 export function setState(cid: string, diff: Dict) {
+    window.clearTimeout(pending.get(cid));
+
     const oldState = states.get(cid) ?? {};
     const newState: Dict = {};
 
@@ -44,4 +53,14 @@ export function setState(cid: string, diff: Dict) {
     if (setters.has(cid)) {
         setters.get(cid)!(newState);
     }
+}
+
+/**
+ * Update component after a certain factor of default delay time.
+ */
+export function pendUpdate(cid: string, delay: number) {
+    window.clearTimeout(pending.get(cid));
+    ready.then(db => {
+        pending.set(cid, window.setTimeout(() => setState(cid, {}), delay * (db.get('duration') || 500)));
+    });
 }

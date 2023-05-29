@@ -1,3 +1,3 @@
-export const Arena: FC = () => {
-    return <nn-arena>Arena</nn-arena>
+export const Arena: FC = ({fade}) => {
+    return <nn-arena class={'fade-'+fade}>Arena</nn-arena>
 };

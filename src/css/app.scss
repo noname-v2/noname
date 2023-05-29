@@ -1,6 +1,9 @@
 nn-app {
     @include layer;
 
+	--fade-in-dur: 0.3s;
+	--fade-out-dur: 0.3s;
+
     noname-zoom {
 		position: absolute;
 		left: 0;

@@ -1,0 +1,27 @@
+.fade-in {
+    animation: fade-in var(--fade-in-dur) ease forwards;
+}
+
+@keyframes fade-in {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.fade-out {
+    animation: fade-out var(--fade-out-dur) ease forwards;
+}
+
+@keyframes fade-out {
+    from {
+        opacity: 1;
+    }
+
+    to {
+        opacity: 0;
+    }
+}
