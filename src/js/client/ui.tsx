@@ -1,4 +1,5 @@
 import { getState } from './state';
+import { api } from './api';
 import { App } from '../components/App';
 import { Arena } from '../components/Arena';
 import { Background } from '../components/Background';
@@ -7,13 +8,13 @@ import { Room } from '../components/Room';
 import { Splash } from '../components/Splash';
 import { Zoom } from '../components/Zoom';
 export const UI = {
-   App: (props: Dict) => App(getState(props), UI),
-   Arena: (props: Dict) => Arena(getState(props), UI),
-   Background: (props: Dict) => Background(getState(props), UI),
-   Foreground: (props: Dict) => Foreground(getState(props), UI),
-   Room: (props: Dict) => Room(getState(props), UI),
-   Splash: (props: Dict) => Splash(getState(props), UI),
-   Zoom: (props: Dict) => Zoom(getState(props), UI),
+   App: (props: Dict) => App(getState(props), UI, api),
+   Arena: (props: Dict) => Arena(getState(props), UI, api),
+   Background: (props: Dict) => Background(getState(props), UI, api),
+   Foreground: (props: Dict) => Foreground(getState(props), UI, api),
+   Room: (props: Dict) => Room(getState(props), UI, api),
+   Splash: (props: Dict) => Splash(getState(props), UI, api),
+   Zoom: (props: Dict) => Zoom(getState(props), UI, api),
 };
 export interface UIType {
    App: typeof App;

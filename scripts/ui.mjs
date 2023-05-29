@@ -1,8 +1,8 @@
 import {promises as fs} from 'fs';
 
-const imports = [`import { getState } from './state';`];
-const ui = ['', 'export const UI = {'];
-const uiType = ['', 'export interface UIType {']
+const imports = [`import { getState } from './state';`, `import { api } from './api';`];
+const ui = ['', 'export const UI = {',];
+const uiType = ['', 'export interface UIType {',]
 const dom = [''];
 const react = [
     `import * as React from 'react';`,
@@ -28,7 +28,7 @@ for (const src of await fs.readdir('./src/js/components')) {
     const cmp = src.split('.')[0];
     const tag = getTag(cmp);
     imports.push(`import { ${cmp} } from '../components/${cmp}';`);
-    ui.push(`   ${cmp}: (props: Dict) => ${cmp}(getState(props), UI),`);
+    ui.push(`   ${cmp}: (props: Dict) => ${cmp}(getState(props), UI, api),`);
     uiType.push(`   ${cmp}: typeof ${cmp};`);
     react.push(`            '${tag}': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;`)
     dom.push(`customElements.define('${tag}', class extends HTMLElement {});`);

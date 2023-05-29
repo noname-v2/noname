@@ -22,8 +22,11 @@ class Hub {
     /** Current link count used as default link ID. */
     #cid = 0;
 
-    /** Count of number of stages executed as an identifier to reject outdated client message. */
-    #sid = 0;
+    /** Awaiting clients response. */
+    #asking = new Map<string, [number, (result: any) => void]>();
+
+    /** Number of require() sent (as identifer to exclude outdated messages). */
+    #asked = 0;
 
     /** Initialize hub.
     * @param send - Function to send message to client.
@@ -34,7 +37,7 @@ class Hub {
     }
 
     /** Callback function when a client sends a mesage. */
-    onmessage(uid: string, message: string | Dict) {
+    onmessage(uid: string, message: string | [number, any]) {
         if (message === 'init') {
             // client initializes connection
             this.#joined.set(uid, null);
@@ -51,8 +54,11 @@ class Hub {
         else if (typeof message === 'string') {
 
         }
-        else {
-
+        else if (Array.isArray(message) && this.#asking.has(uid)) {
+            const [asked, resolve] = this.#asking.get(uid)!;
+            if (message[0] === asked) {
+                resolve(message[1]);
+            }
         }
     }
 
@@ -97,13 +103,8 @@ class Hub {
     }
 
     /** Await response from client. */
-    async require() {
-
-    }
-
-    /** Set as a new stage and reject old messages. */
-    stage() {
-        return this.#sid++;
+    ask(uid: string) {
+        return new Promise<any>(resolve => this.#asking.set(uid, [this.#asked + 1, resolve]));
     }
 
     /** Add an UI update to queue. */
@@ -118,8 +119,10 @@ class Hub {
     /** Send UI changes to clients. */
     #commit() {
         const changes: Dict = {};
+
         for (const [cid, key, val] of this.#ticks) {
             changes[cid] ??= {};
+
             if (key[0] === '$' && val?.constructor === Object) {
                 changes[cid][key] ??= {};
                 apply(changes[cid][key], val);
@@ -128,7 +131,26 @@ class Hub {
                 changes[cid][key] = val;
             }
         }
+
         this.#ticks.length = 0;
+
+        if (this.#asking.size) {
+            this.#asked++;
+            changes['^'] = this.#asked;
+
+            // delete outdated entries
+            const outdated = new Set<string>();
+
+            for (const [key, [asked, _]] of this.#asking.entries()) {
+                if (asked !== this.#asked) {
+                    outdated.add(key);
+                }
+            }
+
+            for (const key of outdated) {
+                this.#asking.delete(key);
+            }
+        }
 
         for (const uid of this.#joined.keys()) {
             this.#send(uid, changes);

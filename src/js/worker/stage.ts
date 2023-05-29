@@ -7,7 +7,7 @@ let currentStage: Stage;
 const api = Object.freeze({
     link: (cid?: string) => hub.link(cid),
     monitor: () => hub.monitor(),
-    require: () => hub.require(),
+    ask: (uid: string) => hub.ask(uid),
     run: (main: string, props: Dict) => currentStage.progress(main, props)
 });
 
@@ -52,8 +52,6 @@ class Stage {
             this.#props = JSON.stringify(props);
             this.#data = props;
         }
-
-        hub.stage();
     }
 
     /** Execute the main function. */

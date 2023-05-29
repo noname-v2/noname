@@ -1,8 +1,7 @@
-export const app: SF = function ({owner}, {link}) {
+export const app: SF = async function ({owner}, {link, ask}) {
     const app = link('app');
     app.owner = owner;
     app.page = 'splash';
-    setTimeout(() => {
-        app.page = 'room'
-    }, 3999)
+    const page = await ask(owner);
+    app.page = page
 }
