@@ -1,5 +1,5 @@
 import type { UIType } from './client/ui';
-import type { ClientAPI } from './client/api';
+import type { HubType } from './client/api';
 import type { StageAPI } from './worker/stage';
 
 declare global {
@@ -10,5 +10,5 @@ declare global {
     type FC = (data: Dict, UI: UIType, api: ClientAPI) => JSX.Element;
 
     /** Stage main function. */
-    type SF = (data: Dict, api: StageAPI) => any;
+    type SF = (data: Dict, api: HubType) => any;
 }

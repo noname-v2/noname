@@ -1,11 +1,11 @@
-export const state = <{ worker: Worker, asked: number }>{};
+export const hubState = <{ worker: Worker, asked: number }>{};
 
-export const api = {
+export const hub = {
     /**
      * Send result to worker-side hub.ask().
      */
     reply(result: any) {
-        state.worker.postMessage([state.asked, result]);
+        hubState.worker.postMessage([hubState.asked, result]);
     },
 
     /**
@@ -24,4 +24,4 @@ export const api = {
     }
 }
 
-export type ClientAPI = typeof api;
+export type HubType = typeof hub;
