@@ -1,9 +1,10 @@
 export const App: FC = ({ page, $page }, UI, { reply, refresh }) => {
-    const map: {[key: string]: (fade: 'in' | 'out') => JSX.Element} = {
-        arena: fade => <UI.Arena fade={fade} />,
-        room: fade => <UI.Room fade={fade} />,
-        splash: fade => <UI.Splash fade={fade} />
-    };
+    const main = (p: string, fade: 'in' | 'out') => {
+        if (p === 'arena') return <UI.Arena fade={fade} />;
+        if (p === 'room') return <UI.Room fade={fade} />;
+        if (p === 'splash') return <UI.Splash fade={fade} />;
+        return '';
+    }
 
     if ($page) {
         refresh();
@@ -17,8 +18,8 @@ export const App: FC = ({ page, $page }, UI, { reply, refresh }) => {
     }}>
         <UI.Zoom cid='app-zoom'>
             <UI.Foreground cid='app-fg' />
-            {page ? map[page]('in') : ''}
-            {$page ? map[$page]('out') : ''}
+            {main(page, 'in')}
+            {main($page, 'out')}
             <UI.Background cid='app-bg'/>
         </UI.Zoom>
     </nn-app>

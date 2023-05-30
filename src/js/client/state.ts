@@ -19,9 +19,23 @@ let c = 0;
  */
 export function getState(props: Dict = {}) {
     const cid = props.cid || ('c:' + c++);
-    const [state, setState] = useState(states.get(cid) ?? props);
+    let s: Dict;
+
+    if (states.has(cid)) {
+        s = states.get(cid)!;
+        s.children = props.children;
+    }
+    else {
+        s = {};
+        for (const key in props) {
+            s[key] = props[key];
+        }
+    }
+    
+    const [state, setState] = useState(s);
     states.set(cid, state);
     setters.set(cid, setState);
+
     return [cid, state];
 }
 
