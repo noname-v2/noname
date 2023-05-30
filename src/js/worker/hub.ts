@@ -74,7 +74,7 @@ class Hub {
 
     /** Create a link to a client-side component. */
     link(cid?: string) {
-        cid ??= 'c:' + this.#cid++;
+        cid ??= 'w:' + this.#cid++;
         const data: Dict = {};
         this.#dicts.set(cid, data);
 

@@ -1,5 +1,4 @@
-import { getState } from './state';
-import { getHub } from './hub';
+import { UIArgs } from './hub';
 import { App } from '../components/App';
 import { Arena } from '../components/Arena';
 import { Background } from '../components/Background';
@@ -8,13 +7,13 @@ import { Room } from '../components/Room';
 import { Splash } from '../components/Splash';
 import { Zoom } from '../components/Zoom';
 export const UI = {
-   App: (props: Dict) => App(getState(props), UI, getHub(props)),
-   Arena: (props: Dict) => Arena(getState(props), UI, getHub(props)),
-   Background: (props: Dict) => Background(getState(props), UI, getHub(props)),
-   Foreground: (props: Dict) => Foreground(getState(props), UI, getHub(props)),
-   Room: (props: Dict) => Room(getState(props), UI, getHub(props)),
-   Splash: (props: Dict) => Splash(getState(props), UI, getHub(props)),
-   Zoom: (props: Dict) => Zoom(getState(props), UI, getHub(props)),
+   App: (props: Dict) => App(...UIArgs(props, UI)),
+   Arena: (props: Dict) => Arena(...UIArgs(props, UI)),
+   Background: (props: Dict) => Background(...UIArgs(props, UI)),
+   Foreground: (props: Dict) => Foreground(...UIArgs(props, UI)),
+   Room: (props: Dict) => Room(...UIArgs(props, UI)),
+   Splash: (props: Dict) => Splash(...UIArgs(props, UI)),
+   Zoom: (props: Dict) => Zoom(...UIArgs(props, UI)),
 };
 export interface UIType {
    App: typeof App;

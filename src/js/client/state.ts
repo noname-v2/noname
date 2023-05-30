@@ -1,4 +1,4 @@
-import { ready } from './db';
+import { db } from './db';
 import { useState } from "react";
 
 /** Component states. */
@@ -10,18 +10,19 @@ const setters = new Map<string, React.Dispatch<Dict>>();
 /** Components pending update. */
 const pending = new Map<string, number>();
 
+/** Counter of components with auto cid. */
+let c = 0;
+
 /**
  * Get the state of a worker-created component.
  * @param {Dict} props - Component property, will be registered if props.cid is string.
  */
-export function getState(props: Dict = {}): Dict {
-    if (typeof props.cid === 'string') {
-        const [state, setState] = useState(states.get(props.cid) ?? props);
-        states.set(props.cid, state);
-        setters.set(props.cid, setState);
-        return state;
-    }
-    return props;
+export function getState(props: Dict = {}) {
+    const cid = props.cid || ('c:' + c++);
+    const [state, setState] = useState(states.get(cid) ?? props);
+    states.set(cid, state);
+    setters.set(cid, setState);
+    return [cid, state];
 }
 
 /**
@@ -60,7 +61,5 @@ export function setState(cid: string, diff: Dict) {
  */
 export function pendUpdate(cid: string, delay: number) {
     window.clearTimeout(pending.get(cid));
-    ready.then(db => {
-        pending.set(cid, window.setTimeout(() => setState(cid, {}), delay * (db.get('duration') || 500)));
-    });
+    pending.set(cid, window.setTimeout(() => setState(cid, {}), delay * (db?.get('duration') || 500)));
 }

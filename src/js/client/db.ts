@@ -77,6 +77,10 @@ class Database {
     }
 }
 
+/** Database object (can be null is indexedDB finished initialization). */
+export let db: Database | null = null;
+
+/** A promise that resolves when indexedDB finishes initialization. */
 export const ready = new Promise<Database>(resolve => {
     // open database
     const request = indexedDB.open('noname_v2', 2);
@@ -96,11 +100,11 @@ export const ready = new Promise<Database>(resolve => {
 
     // cache database and resolve
     request.onsuccess = () => {
-        const db = request.result;
+        const res = request.result;
         const cache = new Map<string, any>();
 
         // cache synchronous database
-        const store = db.transaction('settings', 'readonly').objectStore('settings');
+        const store = res.transaction('settings', 'readonly').objectStore('settings');
         const iterator = store.openCursor();
 
         iterator.onsuccess = () => {
@@ -110,7 +114,8 @@ export const ready = new Promise<Database>(resolve => {
                 cursor.continue();
             }
             else {
-                resolve(new Database(db, cache));
+                db = new Database(res, cache)
+                resolve(db);
             }
         };
     };

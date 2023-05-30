@@ -1,5 +1,7 @@
-import { pendUpdate } from "./state";
+import { pendUpdate, getState, setState } from "./state";
+import type { UIType } from "./ui";
 
+/** Web worker and current state of worker. */
 export const hubState = <{ worker: Worker, asked: number }>{};
 
 /**
@@ -36,8 +38,19 @@ const refresh = (cid: string, delay: number) => {
     }
 }
 
-export function getHub(props: Dict) {
-    return { reply, sync, send, refresh: (delay: number = 1) => refresh(props.cid, delay) }
+function getHub(cid: string) {
+    return {
+        reply, sync, send,
+        refresh: (delay: number = 1) => refresh(cid, delay),
+        update: (diff: Dict) => setState(cid, diff)
+    };
 }
 
 export type HubType = ReturnType<typeof getHub>;
+
+export function UIArgs(props: Dict, UI: UIType): [Dict, UIType, HubType] {
+    const [cid, state] = getState(props);
+
+    return [state, UI, getHub(cid)];
+}
+
