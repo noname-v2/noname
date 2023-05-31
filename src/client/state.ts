@@ -1,5 +1,5 @@
 import { db } from './db';
-import { useState } from "react";
+import { useState, createRef } from "react";
 import type { ClientAPI } from "./ui";
 
 /** Component states. */
@@ -97,7 +97,7 @@ export function setState(cid: string, diff: Dict) {
 export function getState(props: Dict = {}, UI: any): [Dict, ClientAPI] {
     // create a copy of UI object that wraps cid
     const ui: Partial<ClientAPI> = {
-        reply, sync, send,
+        reply, sync, send, createRef,
         refresh: (delay: number = 1) => refresh(cid, delay),
         update: (diff: Dict) => setState(cid, diff)
     }

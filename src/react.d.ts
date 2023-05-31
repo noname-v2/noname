@@ -6,9 +6,9 @@ declare global {
             'nn-arena': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement> & { class?: string, style?: {[key: string]: string | number} }, HTMLElement>;
             'nn-background': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement> & { class?: string, style?: {[key: string]: string | number} }, HTMLElement>;
             'nn-foreground': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement> & { class?: string, style?: {[key: string]: string | number} }, HTMLElement>;
+            'nn-home': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement> & { class?: string, style?: {[key: string]: string | number} }, HTMLElement>;
             'nn-main': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement> & { class?: string, style?: {[key: string]: string | number} }, HTMLElement>;
             'nn-room': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement> & { class?: string, style?: {[key: string]: string | number} }, HTMLElement>;
-            'nn-splash': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement> & { class?: string, style?: {[key: string]: string | number} }, HTMLElement>;
             'nn-zoom': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement> & { class?: string, style?: {[key: string]: string | number} }, HTMLElement>;
         }
     }
