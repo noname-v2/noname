@@ -24,7 +24,7 @@ function getTag(cmp) {
     return tag;
 }
 
-for (const src of await fs.readdir('./src/js/components')) {
+for (const src of await fs.readdir('./src/components')) {
     const cmp = src.split('.')[0];
     const tag = getTag(cmp);
     imports.push(`import { ${cmp} } from '../components/${cmp}';`);
@@ -46,6 +46,6 @@ uiType.push('   [key: string]: FC;')
 uiType.push('};');
 react.push('        }\n    }\n}');
 
-await fs.writeFile('src/js/client/ui.tsx', imports.join('\n') + ui.join('\n') + uiType.join('\n') + dom.join('\n'));
-await fs.writeFile('src/js/react.d.ts', react.join('\n'));
+await fs.writeFile('src/client/ui.tsx', imports.join('\n') + ui.join('\n') + uiType.join('\n') + dom.join('\n'));
+await fs.writeFile('src/react.d.ts', react.join('\n'));
 await fs.writeFile('src/css/index.scss', sheets.join('\n'));
