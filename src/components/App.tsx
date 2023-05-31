@@ -1,8 +1,8 @@
-export const App: FC = ({ page, $page }, UI, { reply, refresh }) => {
+export const App: FC = ({ page, $page }, { Arena, Room, Splash, Zoom, Foreground, Background, reply, refresh }) => {
     const main = (p: string, fade: 'in' | 'out') => {
-        if (p === 'arena') return <UI.Arena fade={fade} />;
-        if (p === 'room') return <UI.Room fade={fade} />;
-        if (p === 'splash') return <UI.Splash fade={fade} />;
+        if (p === 'arena') return <Arena fade={fade} />;
+        if (p === 'room') return <Room fade={fade} />;
+        if (p === 'splash') return <Splash fade={fade} />;
         return '';
     }
 
@@ -16,11 +16,11 @@ export const App: FC = ({ page, $page }, UI, { reply, refresh }) => {
         else if (page === 'arena') reply('splash')
         else alert('error');
     }}>
-        <UI.Zoom cid='app-zoom'>
-            <UI.Foreground cid='app-fg' />
+        <Zoom cid='app-zoom'>
+            <Foreground cid='app-fg' />
             {main(page, 'in')}
             {main($page, 'out')}
-            <UI.Background cid='app-bg'/>
-        </UI.Zoom>
+            <Background cid='app-bg'/>
+        </Zoom>
     </nn-app>
 };

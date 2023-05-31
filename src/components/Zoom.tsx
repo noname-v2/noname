@@ -7,7 +7,7 @@ window.addEventListener('resize', () => {
 });
 
 
-export const Zoom: FC = ({width, height, children, ax, ay}, _, {update}) => {
+export const Zoom: FC = ({width, height, children, ax, ay}, {update}) => {
     currentUpdate = update;
 
     width = width || window.innerWidth;

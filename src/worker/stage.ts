@@ -4,14 +4,13 @@ import { lib } from './lib';
 let currentStage: Stage;
 
 /** Object passed as the second argument of stage function. */
-const api = Object.freeze({
-    link: (cid?: string) => hub.link(cid),
-    monitor: () => hub.monitor(),
-    ask: (uid: string) => hub.ask(uid),
-    run: (main: string, props: Dict) => currentStage.progress(main, props)
-});
+const link = (cid?: string) => hub.link(cid);
+const monitor = () => hub.monitor();
+const ask = (uid: string) => hub.ask(uid);
+const run = (main: string, props: Dict) => currentStage.progress(main, props);
+const api = () => ({ link, monitor, ask, run});
 
-export type StageAPI = typeof api;
+export type StageAPI = ReturnType<typeof api>;
 
 /** Function wrapper for progress backup and restore. */
 class Stage {
@@ -61,7 +60,7 @@ class Stage {
             const parentStage = currentStage;
             currentStage = this;
 
-            this.#result = await main(this.#data, api);
+            this.#result = await main(this.#data, api());
 
             currentStage = parentStage;
         }

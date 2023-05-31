@@ -1,8 +1,8 @@
 import {promises as fs} from 'fs';
 
-const imports = [`import { UIArgs } from './hub';`];
+const imports = [`import { getState } from './state';`];
 const ui = ['', 'export const UI = {',];
-const uiType = ['', 'export interface UIType {',]
+const uiType = ['', 'export interface ClientAPI {',]
 const dom = [''];
 const react = [
     `import * as React from 'react';`,
@@ -28,7 +28,7 @@ for (const src of await fs.readdir('./src/components')) {
     const cmp = src.split('.')[0];
     const tag = getTag(cmp);
     imports.push(`import { ${cmp} } from '../components/${cmp}';`);
-    ui.push(`   ${cmp}: (props: Dict) => ${cmp}(...UIArgs(props, UI)),`);
+    ui.push(`   ${cmp}: (props: Dict) => ${cmp}(...getState(props, UI)),`);
     uiType.push(`   ${cmp}: typeof ${cmp};`);
     react.push(`            '${tag}': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement> & { class?: string, style?: {[key: string]: string | number} }, HTMLElement>;`)
     dom.push(`customElements.define('${tag}', class extends HTMLElement {});`);
@@ -42,7 +42,12 @@ for (const src of await fs.readdir('./src/css')) {
 }
 
 ui.push('};');
-uiType.push('   [key: string]: FC;')
+uiType.push('   reply: (result: any) => void;');
+uiType.push('   sync: (tag: string, msg: any) => void;');
+uiType.push('   send: (tag: string, msg: any) => void;');
+uiType.push('   refresh: (delay?: number) => void;');
+uiType.push('   update: (diff: Dict) => void;');
+uiType.push('   [key: `${Uppercase<string>}${string}`]: FC;');
 uiType.push('};');
 react.push('        }\n    }\n}');
 
