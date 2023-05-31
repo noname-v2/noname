@@ -11,7 +11,7 @@ nn-app {
 		transform-origin: top left;
 		width: var(--zoom-width);
 		height: var(--zoom-height);
-		transform: scale(var(--zoom-scale));
+		scale: var(--zoom-scale);
 		@include hollow;
 	}
 }

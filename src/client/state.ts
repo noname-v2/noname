@@ -1,5 +1,5 @@
 import { db } from './db';
-import { useState, createRef } from "react";
+import react from "react";
 import type { ClientAPI } from "./ui";
 
 /** Component states. */
@@ -97,7 +97,7 @@ export function setState(cid: string, diff: Dict) {
 export function getState(props: Dict = {}, UI: any): [Dict, ClientAPI] {
     // create a copy of UI object that wraps cid
     const ui: Partial<ClientAPI> = {
-        reply, sync, send, createRef,
+        reply, sync, send, react,
         refresh: (delay: number = 1) => refresh(cid, delay),
         update: (diff: Dict) => setState(cid, diff)
     }
@@ -106,27 +106,25 @@ export function getState(props: Dict = {}, UI: any): [Dict, ClientAPI] {
         (ui as any)[key] = UI[key];
     }
 
+    // merge props and state as the first argument of FC
+    const data: Dict = {}
+
+    for (const key in props) {
+        data[key] = props[key];
+    }
+
     const cid = props.cid || ('c:' + c++);
-    let s: Dict;
+    const [state, setter] = react.useState(states.get(cid) ?? { cid });
 
-    if (states.has(cid)) {
-        // use saved state with new child elements
-        s = states.get(cid)!;
-        s.children = props.children;
-    }
-    else {
-        // copy to a mutable object
-        s = { cid };
-        for (const key in props) {
-            s[key] = props[key];
-        }
+    for (const key in state) {
+        data[key] = state[key];
     }
 
-    const [state, setter] = useState(s);
+    // update state and setter
     states.set(cid, state);
     setters.set(cid, setter);
 
-    return [s, ui as ClientAPI];
+    return [data, ui as ClientAPI];
 }
 
 /**
@@ -139,6 +137,6 @@ export function pendUpdate(cid: string, delay: number) {
 
 /** Create worker object. */
 export function createWorker() {
-    worker = new Worker(new URL('../worker/local.ts', import.meta.url), {type: 'module'});
+    worker ??= new Worker(new URL('../worker/local.ts', import.meta.url), {type: 'module'});
     return worker;
 }

@@ -1,6 +1,6 @@
 import {promises as fs} from 'fs';
 
-const imports = [`import { getState } from './state';`, `import type { createRef } from 'react';`];
+const imports = [`import { getState } from './state';`, `import type react from 'react';`];
 const ui = ['', 'export const UI = {',];
 const uiType = ['', 'export interface ClientAPI {',]
 const dom = [''];
@@ -47,7 +47,7 @@ uiType.push('   sync: (tag: string, msg: any) => void;');
 uiType.push('   send: (tag: string, msg: any) => void;');
 uiType.push('   refresh: (delay?: number) => void;');
 uiType.push('   update: (diff: Dict) => void;');
-uiType.push('   createRef: typeof createRef<HTMLElement>;');
+uiType.push('   react: typeof react;');
 uiType.push('   [key: `${Uppercase<string>}${string}`]: FC;');
 uiType.push('};');
 react.push('        }\n    }\n}');

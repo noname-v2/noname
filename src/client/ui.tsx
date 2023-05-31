@@ -1,5 +1,5 @@
 import { getState } from './state';
-import type { createRef } from 'react';
+import type react from 'react';
 import { App } from '../components/App';
 import { Arena } from '../components/Arena';
 import { Background } from '../components/Background';
@@ -32,7 +32,7 @@ export interface ClientAPI {
    send: (tag: string, msg: any) => void;
    refresh: (delay?: number) => void;
    update: (diff: Dict) => void;
-   createRef: typeof createRef<HTMLElement>;
+   react: typeof react;
    [key: `${Uppercase<string>}${string}`]: FC;
 };
 customElements.define('nn-app', class extends HTMLElement {});
