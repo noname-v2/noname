@@ -3,6 +3,7 @@ import { App } from '../components/App';
 import { Arena } from '../components/Arena';
 import { Background } from '../components/Background';
 import { Foreground } from '../components/Foreground';
+import { Main } from '../components/Main';
 import { Room } from '../components/Room';
 import { Splash } from '../components/Splash';
 import { Zoom } from '../components/Zoom';
@@ -11,6 +12,7 @@ export const UI = {
    Arena: (props: Dict) => Arena(...getState(props, UI)),
    Background: (props: Dict) => Background(...getState(props, UI)),
    Foreground: (props: Dict) => Foreground(...getState(props, UI)),
+   Main: (props: Dict) => Main(...getState(props, UI)),
    Room: (props: Dict) => Room(...getState(props, UI)),
    Splash: (props: Dict) => Splash(...getState(props, UI)),
    Zoom: (props: Dict) => Zoom(...getState(props, UI)),
@@ -20,6 +22,7 @@ export interface ClientAPI {
    Arena: typeof Arena;
    Background: typeof Background;
    Foreground: typeof Foreground;
+   Main: typeof Main;
    Room: typeof Room;
    Splash: typeof Splash;
    Zoom: typeof Zoom;
@@ -34,6 +37,7 @@ customElements.define('nn-app', class extends HTMLElement {});
 customElements.define('nn-arena', class extends HTMLElement {});
 customElements.define('nn-background', class extends HTMLElement {});
 customElements.define('nn-foreground', class extends HTMLElement {});
+customElements.define('nn-main', class extends HTMLElement {});
 customElements.define('nn-room', class extends HTMLElement {});
 customElements.define('nn-splash', class extends HTMLElement {});
 customElements.define('nn-zoom', class extends HTMLElement {});

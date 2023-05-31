@@ -121,12 +121,12 @@ export function getState(props: Dict = {}, UI: any): [Dict, ClientAPI] {
             s[key] = props[key];
         }
     }
-    
+
     const [state, setter] = useState(s);
     states.set(cid, state);
     setters.set(cid, setter);
 
-    return [state, ui as ClientAPI];
+    return [s, ui as ClientAPI];
 }
 
 /**

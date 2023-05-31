@@ -1,3 +1,14 @@
-.disabled {
-    opacity: 0.3;
+html, body {
+	@include layer;
+    color: white;
+	overflow: hidden;
+	overscroll-behavior: none; // disable two finger back gesture in chrome
+	background-color: #3c3c3c;
+	user-select: none;
+	-webkit-user-select: none;
+	-webkit-tap-highlight-color: transparent; // no highlight when tappin on element
+}
+
+#root, nn-foreground, nn-main, nn-background {
+	@include layer;
 }

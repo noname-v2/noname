@@ -1,3 +1,3 @@
-export const Foreground: FC = () => {
-    return <nn-foreground></nn-foreground>
+export const Foreground: FC = ({children}) => {
+    return <nn-foreground>{children}</nn-foreground>
 };

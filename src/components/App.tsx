@@ -1,4 +1,4 @@
-export const App: FC = ({ page, $page }, { Arena, Room, Splash, Zoom, Foreground, Background, reply, refresh }) => {
+export const App: FC = ({ page, $page }, { Arena, Room, Splash, Zoom, Foreground, Main, Background, reply, refresh }) => {
     const main = (p: string, fade: 'in' | 'out') => {
         if (p === 'arena') return <Arena fade={fade} />;
         if (p === 'room') return <Room fade={fade} />;
@@ -18,8 +18,10 @@ export const App: FC = ({ page, $page }, { Arena, Room, Splash, Zoom, Foreground
     }}>
         <Zoom cid='app-zoom'>
             <Foreground cid='app-fg' />
-            {main(page, 'in')}
-            {main($page, 'out')}
+            <Main>
+                {main(page, 'in')}
+                {main($page, 'out')}
+            </Main>
             <Background cid='app-bg'/>
         </Zoom>
     </nn-app>
