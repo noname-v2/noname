@@ -1,5 +1,4 @@
-import { db } from './db';
-import { animations, getCurrent, AnimationConfig } from './animation';
+import { animations, durations, getCurrent, AnimationConfig } from './animation';
 import react from "react";
 import type { ClientAPI } from "./ui";
 
@@ -167,7 +166,7 @@ export function getState(props: Dict = {}, UI: any): [Dict, ClientAPI] {
  */
 export function pendUpdate(cid: string, delay: number) {
     window.clearTimeout(pending.get(cid));
-    pending.set(cid, window.setTimeout(() => setState(cid, {}), delay * (db?.get('duration') || 500)));
+    pending.set(cid, window.setTimeout(() => setState(cid, {}), delay * durations.slower * 1000));
 }
 
 /** Create worker object. */

@@ -7,7 +7,7 @@ export const App: FC = ({ page, $page }, { Arena, Room, Home, Zoom, Foreground, 
     }
 
     if ($page) {
-        refresh(10);
+        refresh();
     }
 
     return <nn-app onClick={() => {

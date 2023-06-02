@@ -5,8 +5,8 @@ interface Config {
     opacity: number | string;
 }
 
-const durations = {
-    normal: 3,
+export const durations = {
+    normal: 0.3,
     fast: 0.2,
     faster: 0.1,
     slow: 0.5, 
@@ -89,6 +89,6 @@ export const animations: {[key: string]: (this: any, target: HTMLElement, from: 
         }
 
         target?.getAnimations().map(anim => anim.cancel())
-        target?.animate([parseConfig(from), parseConfig(to)], { duration: durations[dur] * 1000, fill: 'forwards' });
+        target?.animate([parseConfig(from), parseConfig(to)], { duration: durations[dur] * 1000, fill: 'forwards', easing: 'ease' });
     }
 }
