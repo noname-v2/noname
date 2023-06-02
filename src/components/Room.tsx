@@ -1,3 +1,3 @@
-export const Room: FC = ({fade}, _) => {
-    return <nn-room style={{translate: 100}} class={'fade-'+fade}><h1>Room</h1></nn-room>
+export const Room: FC = (_, {animate}) => {
+    return <nn-room ref={animate({fade: {out: {translate: 100}}})}><h1>Room {_.fade}</h1></nn-room>
 };

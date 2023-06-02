@@ -1,4 +1,5 @@
 import { db } from './db';
+import { animations, getCurrent, AnimationConfig } from './animation';
 import react from "react";
 import type { ClientAPI } from "./ui";
 
@@ -11,14 +12,14 @@ const setters = new Map<string, React.Dispatch<Dict>>();
 /** Components pending update. */
 const pending = new Map<string, number>();
 
-/** Counter of components with auto cid. */
-let c = 0;
-
 /** Web worker object. */
 let worker: Worker;
 
 /** Counter of worker-side  */
 let asked: number;
+
+/** Rendered components with unique IDs. */
+const rendered = new Map<string, HTMLElement>();
 
 /**
  * Send result to worker-side hub.ask().
@@ -91,11 +92,32 @@ export function setState(cid: string, diff: Dict) {
 }
 
 /** Wrap functions for FC. */
-const wrap = (cid: string) => {
+const wrap = (data: Dict) => {
+    const cid = data.cid;
     return {
         reply, sync, send, react,
-        refresh: (delay: number = 1) => refresh(cid, delay),
-        update: (diff: Dict) => setState(cid, diff)
+        refresh: (delay: number = 1) => (cid ? refresh(cid, delay) : null),
+        update: (diff: Dict) => (cid ? setState(cid, diff) : null),
+        animate: (anims: {[key: string]: AnimationConfig}) => {
+            const ref = react.createRef<HTMLElement>();
+            const from = getCurrent(rendered.get(cid));
+
+            /** Update after component is rendered. */
+            react.useEffect(() => {
+                if (cid && ref.current) {
+                    rendered.set(cid, ref.current);
+                }
+            });
+
+            /** Trigger animation when corresponding property changes. */
+            for (const key in anims) {
+                react.useEffect(() => {
+                    animations[key].apply(data, [ref.current!, from, anims[key]]);
+                }, [data[key]])
+            }
+
+            return ref;
+        }
     }
 }
 
@@ -106,30 +128,36 @@ export type StateAPI = ReturnType<typeof wrap>;
  * @param {Dict} props - Component property, will be registered if props.cid is string.
  */
 export function getState(props: Dict = {}, UI: any): [Dict, ClientAPI] {
+    const cid = props.cid;
+    const data: Dict = {}
+    
+    for (const key in props) {
+        data[key] = props[key];
+    }
+    
+    if (cid) {
+        // merge props and state for components with cid
+        const [state, setter] = react.useState(states.get(cid) ?? { cid });
+
+        for (const key in state) {
+            data[key] = state[key];
+        }
+
+        // update state and setter
+        states.set(cid, state);
+        setters.set(cid, setter);
+    }
+
     // create a copy of UI object that wraps cid
-    const cid = props.cid || ('c:' + c++);
-    const ui: Partial<ClientAPI> = wrap(cid);
+    const ui: Partial<ClientAPI> = wrap(data);
 
     for (const key in UI) {
         (ui as any)[key] = UI[key];
     }
 
-    // merge props and state as the first argument of FC
-    const data: Dict = {}
-
-    for (const key in props) {
-        data[key] = props[key];
+    for (const key in animations) {
+        (ui as any)[key] = (...args: any[]) => (animations as any)[key].apply(data, args);
     }
-    
-    const [state, setter] = react.useState(states.get(cid) ?? { cid });
-
-    for (const key in state) {
-        data[key] = state[key];
-    }
-
-    // update state and setter
-    states.set(cid, state);
-    setters.set(cid, setter);
 
     return [data, ui as ClientAPI];
 }

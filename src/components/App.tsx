@@ -7,7 +7,7 @@ export const App: FC = ({ page, $page }, { Arena, Room, Home, Zoom, Foreground, 
     }
 
     if ($page) {
-        refresh();
+        refresh(10);
     }
 
     return <nn-app onClick={() => {
@@ -19,8 +19,8 @@ export const App: FC = ({ page, $page }, { Arena, Room, Home, Zoom, Foreground, 
         <Zoom cid='app-zoom'>
             <Foreground cid='app-fg' />
             <Main>
-                {main(page, 'in')}
                 {main($page, 'out')}
+                {main(page, 'in')}
             </Main>
             <Background cid='app-bg'/>
         </Zoom>

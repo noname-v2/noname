@@ -1,9 +1,3 @@
-export const Home: FC = ({fade, $fade}, {}) => {
-    // const ref = createRef();
-
-
-
-    return <nn-home class={'fade-'+fade}><h1>Home</h1></nn-home>
+export const Home: FC = (_, {animate}) => {
+    return <nn-home ref={animate({fade: {'out': {scale: 0}}})}><h1>Home</h1></nn-home>
 };
-
-// from here: quick animated toggle with getComputedStyle()
