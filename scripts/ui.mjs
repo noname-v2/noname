@@ -1,8 +1,8 @@
 import {promises as fs} from 'fs';
 
-const imports = [`import { getState } from './state';`, `import type react from 'react';`];
+const imports = [`import { getState, StateAPI } from './state';`];
 const ui = ['', 'export const UI = {',];
-const uiType = ['', 'export interface ClientAPI {',]
+const uiType = ['', 'export interface ClientAPI extends StateAPI {',]
 const dom = [''];
 const react = [
     `import * as React from 'react';`,
@@ -42,12 +42,6 @@ for (const src of await fs.readdir('./src/css')) {
 }
 
 ui.push('};');
-uiType.push('   reply: (result: any) => void;');
-uiType.push('   sync: (tag: string, msg: any) => void;');
-uiType.push('   send: (tag: string, msg: any) => void;');
-uiType.push('   refresh: (delay?: number) => void;');
-uiType.push('   update: (diff: Dict) => void;');
-uiType.push('   react: typeof react;');
 uiType.push('   [key: `${Uppercase<string>}${string}`]: FC;');
 uiType.push('};');
 react.push('        }\n    }\n}');

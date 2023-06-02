@@ -1,5 +1,4 @@
-import { getState } from './state';
-import type react from 'react';
+import { getState, StateAPI } from './state';
 import { App } from '../components/App';
 import { Arena } from '../components/Arena';
 import { Background } from '../components/Background';
@@ -18,7 +17,7 @@ export const UI = {
    Room: (props: Dict) => Room(...getState(props, UI)),
    Zoom: (props: Dict) => Zoom(...getState(props, UI)),
 };
-export interface ClientAPI {
+export interface ClientAPI extends StateAPI {
    App: typeof App;
    Arena: typeof Arena;
    Background: typeof Background;
@@ -27,12 +26,6 @@ export interface ClientAPI {
    Main: typeof Main;
    Room: typeof Room;
    Zoom: typeof Zoom;
-   reply: (result: any) => void;
-   sync: (tag: string, msg: any) => void;
-   send: (tag: string, msg: any) => void;
-   refresh: (delay?: number) => void;
-   update: (diff: Dict) => void;
-   react: typeof react;
    [key: `${Uppercase<string>}${string}`]: FC;
 };
 customElements.define('nn-app', class extends HTMLElement {});

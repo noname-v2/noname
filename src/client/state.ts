@@ -90,17 +90,25 @@ export function setState(cid: string, diff: Dict) {
     }
 }
 
+/** Wrap functions for FC. */
+const wrap = (cid: string) => {
+    return {
+        reply, sync, send, react,
+        refresh: (delay: number = 1) => refresh(cid, delay),
+        update: (diff: Dict) => setState(cid, diff)
+    }
+}
+
+export type StateAPI = ReturnType<typeof wrap>;
+
 /**
  * Get the state of a worker-created component.
  * @param {Dict} props - Component property, will be registered if props.cid is string.
  */
 export function getState(props: Dict = {}, UI: any): [Dict, ClientAPI] {
     // create a copy of UI object that wraps cid
-    const ui: Partial<ClientAPI> = {
-        reply, sync, send, react,
-        refresh: (delay: number = 1) => refresh(cid, delay),
-        update: (diff: Dict) => setState(cid, diff)
-    }
+    const cid = props.cid || ('c:' + c++);
+    const ui: Partial<ClientAPI> = wrap(cid);
 
     for (const key in UI) {
         (ui as any)[key] = UI[key];
@@ -112,8 +120,7 @@ export function getState(props: Dict = {}, UI: any): [Dict, ClientAPI] {
     for (const key in props) {
         data[key] = props[key];
     }
-
-    const cid = props.cid || ('c:' + c++);
+    
     const [state, setter] = react.useState(states.get(cid) ?? { cid });
 
     for (const key in state) {
