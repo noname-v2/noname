@@ -68,9 +68,9 @@ export function animate(this: Dict, anims: Partial<AnimationConfig>, duration: A
             return;
         }
         
-        const frames = Array.isArray(anim) ? anim : [anim];
+        const frames = Array.isArray(anim) ? anim.slice(0) : [anim];
         frames.unshift(from ?? anims.out!);
-        (duration as number) *= frames.length - 1;
+        (duration as number) *= Math.sqrt(frames.length - 1);
         
         // fill default animation property
         frames.forEach(frame => {
