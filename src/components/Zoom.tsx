@@ -1,4 +1,4 @@
-import { db } from "../client/db";
+import { db } from '../client/db';
 
 let currentUpdate: (diff: Dict) => void;
 

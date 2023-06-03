@@ -1,3 +1,5 @@
-export const Arena: FC = ({fade}) => {
-    return <nn-arena class={'fade-'+fade}>Arena</nn-arena>
+export const Arena: FC = (_, {animate}) => {
+    return <nn-arena ref={animate({
+        jump: [{translate: [0, 50]}, {}]
+    })}><h1>Arena</h1></nn-arena>
 };

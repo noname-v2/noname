@@ -1,4 +1,4 @@
-import { apply } from "../utils";
+import { apply } from '../utils';
 
 type Send = (uid: string, msg: Dict) => void;
 

@@ -1,6 +1,6 @@
-import { animations, durations, getCurrent, AnimationConfig } from './animation';
-import react from "react";
-import type { ClientAPI } from "./ui";
+import { durations, animate } from './animate';
+import react from 'react';
+import type { ClientAPI } from './ui';
 
 /** Component states. */
 const states = new Map<string, Dict>();
@@ -16,9 +16,6 @@ let worker: Worker;
 
 /** Counter of worker-side  */
 let asked: number;
-
-/** Rendered components with unique IDs. */
-const rendered = new Map<string, HTMLElement>();
 
 /**
  * Send result to worker-side hub.ask().
@@ -97,26 +94,7 @@ const wrap = (data: Dict) => {
         reply, sync, send, react,
         refresh: (delay: number = 1) => (cid ? refresh(cid, delay) : null),
         update: (diff: Dict) => (cid ? setState(cid, diff) : null),
-        animate: (anims: {[key: string]: AnimationConfig}) => {
-            const ref = react.createRef<HTMLElement>();
-            const from = getCurrent(rendered.get(cid));
-
-            /** Update after component is rendered. */
-            react.useEffect(() => {
-                if (cid && ref.current) {
-                    rendered.set(cid, ref.current);
-                }
-            });
-
-            /** Trigger animation when corresponding property changes. */
-            for (const key in anims) {
-                react.useEffect(() => {
-                    animations[key].apply(data, [ref.current!, from, anims[key]]);
-                }, [data[key]])
-            }
-
-            return ref;
-        }
+        animate: ((anims, duration) => animate.apply(data, [anims, duration])) as OmitThisParameter<typeof animate>
     }
 }
 
@@ -152,10 +130,6 @@ export function getState(props: Dict = {}, UI: any): [Dict, ClientAPI] {
 
     for (const key in UI) {
         (ui as any)[key] = UI[key];
-    }
-
-    for (const key in animations) {
-        (ui as any)[key] = (...args: any[]) => (animations as any)[key].apply(data, args);
     }
 
     return [data, ui as ClientAPI];
