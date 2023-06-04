@@ -93,8 +93,8 @@ const wrap = (data: Dict) => {
     const cid = data.cid;
     return {
         reply, sync, send, dur, db,
-        refresh: (delay: number = 1) => (cid ? refresh(cid, delay) : null),
-        update: (diff: Dict) => (cid ? setState(cid, diff) : null),
+        refresh: (delay: number = 1) => (cid ? refresh(cid, delay) : console.warn('Cannot refresh a component without `cid` property.')),
+        update: (diff: Dict) => (cid ? setState(cid, diff) : console.warn('Cannot update a component without `cid` property.')),
         animate: ((...args) => animate.apply(data, args)) as OmitThisParameter<typeof animate>
     }
 }
