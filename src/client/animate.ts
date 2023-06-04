@@ -4,7 +4,7 @@ import { createRef, useEffect } from 'react';
 const rendered = new Map<string, HTMLElement>();
 
 /** Preset duration for transition. */
-export const durations = {
+const durations = {
     normal: 0.3,
     fast: 0.2,
     faster: 0.1,
@@ -12,10 +12,21 @@ export const durations = {
     slower: 0.7
 };
 
-export type AnimationDuration = number | keyof typeof durations;
+type AnimationDuration = number | keyof typeof durations;
+
+/** Convert duration type to milliseconds. */
+export function dur(duration?: AnimationDuration): number {
+    if (typeof duration === 'string') {
+        duration = durations[duration];
+    }
+
+    duration ??= durations.normal;
+
+    return duration * 1000;
+}
 
 /** CSS properties for animation. */
-export type AnimationFrame = Partial<{
+type AnimationFrame = Partial<{
     translate: number | [number, number] | string;
     rotate: number | string;
     scale: number | string;
@@ -30,17 +41,13 @@ type AnimationConfig = {
 };
 
 /** Animate a component when its state value changes. */
-export function animate(this: Dict, anims: Partial<AnimationConfig>, duration: AnimationDuration = 'normal') {
+export function animate(this: Dict, anims: Partial<AnimationConfig>, duration?: AnimationDuration) {
     const cid = this.cid;
     const ref = createRef<HTMLElement>();
     const from = getCurrent(cid);
     const state = this.state ?? 'in';
 
-    if (typeof duration === 'string') {
-        duration = durations[duration];
-    }
-    duration ??= durations.normal;
-    duration *= 1000;
+    duration = dur(duration);
 
     // default properties when component is mounted / unmounted
     anims.in ??= {};
@@ -52,7 +59,7 @@ export function animate(this: Dict, anims: Partial<AnimationConfig>, duration: A
     anims.out ??= {};
     anims.out.opacity ??= 0;
 
-    // update after component is rendered
+    // save the latest rendered element
     useEffect(() => {
         if (cid && ref.current) {
             rendered.set(cid, ref.current);
@@ -87,7 +94,7 @@ export function animate(this: Dict, anims: Partial<AnimationConfig>, duration: A
     return ref;
 }
 
-
+/** Get the style of last rendered element. */
 export function getCurrent(cid: string): AnimationFrame | null {
     const target = rendered.get(cid);
 
@@ -99,7 +106,7 @@ export function getCurrent(cid: string): AnimationFrame | null {
     return null;
 }
 
-/** Convert number in CSS property to pixels. */
+/** Convert numbers in CSS property to pixels. */
 function parseConfig(config: AnimationFrame) {
     let translate = config.translate;
     let rotate = config.rotate;

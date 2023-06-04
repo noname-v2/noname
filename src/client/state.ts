@@ -1,5 +1,6 @@
-import { durations, animate } from './animate';
-import react from 'react';
+import { dur, animate } from './animate';
+import { db } from './db';
+import { useState } from 'react';
 import type { ClientAPI } from './ui';
 
 /** Component states. */
@@ -91,10 +92,10 @@ export function setState(cid: string, diff: Dict) {
 const wrap = (data: Dict) => {
     const cid = data.cid;
     return {
-        reply, sync, send, react,
+        reply, sync, send, dur, db,
         refresh: (delay: number = 1) => (cid ? refresh(cid, delay) : null),
         update: (diff: Dict) => (cid ? setState(cid, diff) : null),
-        animate: ((anims, duration) => animate.apply(data, [anims, duration])) as OmitThisParameter<typeof animate>
+        animate: ((...args) => animate.apply(data, args)) as OmitThisParameter<typeof animate>
     }
 }
 
@@ -114,7 +115,7 @@ export function getState(props: Dict = {}, UI: any): [Dict, ClientAPI] {
     
     if (cid) {
         // merge props and state for components with cid
-        const [state, setter] = react.useState(states.get(cid) ?? { cid });
+        const [state, setter] = useState(states.get(cid) ?? { cid });
 
         for (const key in state) {
             data[key] = state[key];
@@ -140,11 +141,17 @@ export function getState(props: Dict = {}, UI: any): [Dict, ClientAPI] {
  */
 export function pendUpdate(cid: string, delay: number) {
     window.clearTimeout(pending.get(cid));
-    pending.set(cid, window.setTimeout(() => setState(cid, {}), delay * durations.slower * 1000));
+    pending.set(cid, window.setTimeout(() => setState(cid, {}), delay * dur('slower')));
 }
 
 /** Create worker object. */
 export function createWorker() {
-    worker ??= new Worker(new URL('../worker/local.ts', import.meta.url), {type: 'module'});
-    return worker;
+    if (!worker) {
+        worker = new Worker(new URL('../worker/local.ts', import.meta.url), {type: 'module'});
+        worker.onmessage = ({data}) => {
+            for (const cid in data) {
+                setState(cid, data[cid]);
+            }
+        }    
+    }
 }
