@@ -45,7 +45,7 @@ export function animate(this: Dict, anims: Partial<AnimationConfig>, duration?: 
     const cid = this.cid;
     const ref = createRef<HTMLElement>();
     const from = getCurrent(cid);
-    const state = this.state ?? 'in';
+    const state = this.state;
 
     duration = dur(duration);
 
