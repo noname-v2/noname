@@ -25,5 +25,3 @@ export const App: FC = ({ page, $page }, { Arena, Room, Home, Zoom, Foreground, 
         </Zoom>
     </nn-app>
 };
-
-// from here: ref={animate()} -> ref={bind()}

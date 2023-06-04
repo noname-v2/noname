@@ -1,6 +1,6 @@
-import { dur, animate } from './animate';
+import { dur, animate, rendered } from './animate';
 import { db } from './db';
-import { useState } from 'react';
+import { useState, useEffect, createRef } from 'react';
 import type { ClientAPI } from './ui';
 
 /** Component states. */
@@ -17,9 +17,6 @@ let worker: Worker;
 
 /** Counter of worker-side  */
 let asked: number;
-
-/** Automatic cid for components with no cid assigned. */
-let c = 0;
 
 /**
  * Send result to worker-side hub.ask().
@@ -41,19 +38,6 @@ const sync = () => {
  */
 const send = () => {
 
-}
-
-/**
- * Update component removing state changes
- */
-const refresh = (cid: string, delay: number) => {
-    if (typeof cid === 'string') {
-        pendUpdate(cid, delay);
-    }
-    else {
-        // components without cid will not trigger state change so this line shouldn't be executed, added here just in case
-        console.warn('Cannot call refresh() for component without a cid.')
-    }
 }
 
 /**
@@ -122,6 +106,18 @@ const wrap = (data: Dict, state: Dict, setter: React.Dispatch<Dict>) => {
             else {
                 setter(getNewState(state, diff));
             }
+        },
+        ref: () => {
+            const ref = createRef<HTMLElement>();
+            data.__ref__ = ref;
+
+            useEffect(() => {
+                if (cid && ref.current) {
+                    rendered.set(cid, ref.current);
+                }
+            });
+
+            return ref;
         }
     }
 }

@@ -1,7 +1,7 @@
-import { createRef, useEffect } from 'react';
+import { useEffect } from 'react';
 
 /** Rendered components with unique IDs. */
-const rendered = new Map<string, HTMLElement>();
+export const rendered = new Map<string, HTMLElement>();
 
 /** Preset duration for transition. */
 const durations = {
@@ -43,7 +43,6 @@ type AnimationConfig = {
 /** Animate a component when its state value changes. */
 export function animate(this: Dict, anims: Partial<AnimationConfig>, duration?: AnimationDuration) {
     const cid = this.cid;
-    const ref = createRef<HTMLElement>();
     const from = getCurrent(cid);
     const state = this.state;
 
@@ -59,16 +58,9 @@ export function animate(this: Dict, anims: Partial<AnimationConfig>, duration?: 
     anims.out ??= {};
     anims.out.opacity ??= 0;
 
-    // save the latest rendered element
-    useEffect(() => {
-        if (cid && ref.current) {
-            rendered.set(cid, ref.current);
-        }
-    });
-
     // trigger animation when state property changes
     useEffect(() => {
-        const target = ref.current;
+        const target = this.__ref__?.current as HTMLElement;
         const anim = anims[state];
 
         if (!target || !anim || (Array.isArray(anim) && !anim.length)) {
@@ -90,8 +82,6 @@ export function animate(this: Dict, anims: Partial<AnimationConfig>, duration?: 
         target.getAnimations().map(anim => anim.cancel());
         target.animate(frames.map(frame => parseConfig(frame)), { duration, fill: 'forwards', easing: 'ease' });
     }, [state]);
-
-    return ref;
 }
 
 /** Get the style of last rendered element. */

@@ -1,5 +1,7 @@
-export const Arena: FC = (_, {animate}) => {
-    return <nn-arena ref={animate({
+export const Arena: FC = (_, {animate, ref}) => {
+    animate({
         jump: [{translate: [0, 50]}, {}]
-    })}><h1>Arena</h1></nn-arena>
+    });
+
+    return <nn-arena ref={ref()}><h1>Arena</h1></nn-arena>
 };
