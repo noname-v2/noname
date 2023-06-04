@@ -18,6 +18,9 @@ let worker: Worker;
 /** Counter of worker-side  */
 let asked: number;
 
+/** Automatic cid for components with no cid assigned. */
+let c = 0;
+
 /**
  * Send result to worker-side hub.ask().
  */
@@ -41,14 +44,15 @@ const send = () => {
 }
 
 /**
- * Update component.
+ * Update component removing state changes
  */
 const refresh = (cid: string, delay: number) => {
     if (typeof cid === 'string') {
         pendUpdate(cid, delay);
     }
     else {
-        throw('Cannot call update() for component without a cid.')
+        // components without cid will not trigger state change so this line shouldn't be executed, added here just in case
+        console.warn('Cannot call refresh() for component without a cid.')
     }
 }
 
@@ -66,6 +70,18 @@ export function setState(cid: string, diff: Dict) {
     window.clearTimeout(pending.get(cid));
 
     const oldState = states.get(cid) ?? {};
+    const newState = getNewState(oldState, diff);
+
+    // update component state
+    states.set(cid, newState);
+
+    if (setters.has(cid)) {
+        setters.get(cid)!(newState);
+    }
+}
+
+/** Create a new state object with updated values. */
+const getNewState = (oldState: Dict, diff: Dict) => {
     const newState: Dict = {};
 
     // copy unchanged state
@@ -81,21 +97,32 @@ export function setState(cid: string, diff: Dict) {
         newState[key] = diff[key];
     }
 
-    // update component state
-    states.set(cid, newState);
-    if (setters.has(cid)) {
-        setters.get(cid)!(newState);
-    }
-}
+    return newState;
+};
 
 /** Wrap functions for FC. */
-const wrap = (data: Dict) => {
+const wrap = (data: Dict, state: Dict, setter: React.Dispatch<Dict>) => {
     const cid = data.cid;
+
     return {
         reply, sync, send, dur, db,
-        refresh: (delay: number = 1) => (cid ? refresh(cid, delay) : console.warn('Cannot refresh a component without `cid` property.')),
-        update: (diff: Dict) => (cid ? setState(cid, diff) : console.warn('Cannot update a component without `cid` property.')),
-        animate: ((...args) => animate.apply(data, args)) as OmitThisParameter<typeof animate>
+        animate: ((...args) => animate.apply(data, args)) as OmitThisParameter<typeof animate>,
+        refresh: (delay: number = 1) => {
+            if (cid) {
+                pendUpdate(cid, delay);
+            }
+            else {
+                window.setTimeout(() => setter(getNewState(state, {})), delay * dur('slower'))
+            }
+        },
+        update: (diff: Dict) => {
+            if (cid) {
+                setState(cid, diff)
+            }
+            else {
+                setter(getNewState(state, diff));
+            }
+        }
     }
 }
 
@@ -106,28 +133,28 @@ export type StateAPI = ReturnType<typeof wrap>;
  * @param {Dict} props - Component property, will be registered if props.cid is string.
  */
 export function getState(props: Dict = {}, UI: any): [Dict, ClientAPI] {
-    const cid = props.cid;
-    const data: Dict = {}
+    const cid = props.cid ?? null;
+    const data: Dict = {};
     
     for (const key in props) {
         data[key] = props[key];
     }
     
+    // merge props and state for components with cid
+    const [state, setter] = useState(states.get(cid) ?? { cid });
+
+    for (const key in state) {
+        data[key] = state[key];
+    }
+
+    // update state and setter
     if (cid) {
-        // merge props and state for components with cid
-        const [state, setter] = useState(states.get(cid) ?? { cid });
-
-        for (const key in state) {
-            data[key] = state[key];
-        }
-
-        // update state and setter
         states.set(cid, state);
         setters.set(cid, setter);
     }
 
     // create a copy of UI object that wraps cid
-    const ui: Partial<ClientAPI> = wrap(data);
+    const ui: Partial<ClientAPI> = wrap(data, state, setter);
 
     for (const key in UI) {
         (ui as any)[key] = UI[key];

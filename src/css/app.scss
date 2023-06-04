@@ -11,4 +11,9 @@ nn-app {
 		scale: var(--zoom-scale);
 		@include hollow;
 	}
+
+	nn-home, nn-room, nn-arena {
+		@include layer;
+		transform-origin: top left;
+	}
 }

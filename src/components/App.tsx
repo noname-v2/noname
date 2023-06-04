@@ -11,11 +11,11 @@ export const App: FC = ({ page, $page }, { Arena, Room, Home, Zoom, Foreground, 
     }
 
     return <nn-app onClick={() => {
-        // if (page === 'home') reply('room');
-        // else if (page === 'room') reply('arena');
-        // else if (page === 'arena') reply('home')
+        if (page === 'home') reply('room');
+        else if (page === 'room') reply('arena');
+        else if (page === 'arena') reply('home')
     }}>
-        <Zoom cid='app-zoom'>
+        <Zoom>
             <Foreground cid='app-fg' />
             <Main>
                 {main($page, 'out')}
@@ -25,3 +25,5 @@ export const App: FC = ({ page, $page }, { Arena, Room, Home, Zoom, Foreground, 
         </Zoom>
     </nn-app>
 };
+
+// from here: ref={animate()} -> ref={bind()}
