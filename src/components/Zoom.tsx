@@ -1,15 +1,12 @@
 import { db } from '../client/db';
-
-let currentUpdate: (diff: Dict) => void;
+import { setState } from '../client/state';
 
 window.addEventListener('resize', () => {
-    currentUpdate({ width: window.innerWidth, height: window.innerHeight})
+    setState('zoom', { width: window.innerWidth, height: window.innerHeight})
 });
 
 
-export const Zoom: FC = ({width, height, children, ax, ay}, {update}) => {
-    currentUpdate = update;
-
+export const Zoom: FC = ({width, height, children, ax, ay}) => {
     width = width || window.innerWidth;
     height = height || window.innerHeight;
     ax = ax || db?.get('window-width') || 960;
@@ -29,6 +26,9 @@ export const Zoom: FC = ({width, height, children, ax, ay}, {update}) => {
         h = ay;
         z = zy;
     }
+    
+    // set global properties for other components to access
+    setState('zoom-state', {width: w, height: h, zoom: z});
 
     return <nn-zoom style={{'--zoom-width': w + 'px', '--zoom-height': h + 'px', '--zoom-scale': z}}>{children}</nn-zoom>
 };

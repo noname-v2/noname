@@ -1,6 +1,6 @@
 import {promises as fs} from 'fs';
 
-const imports = [`import { getState, StateAPI } from './state';`];
+const imports = [`import { createState, StateAPI } from './state';`];
 const ui = ['', 'export const UI = {',];
 const uiType = ['', 'export interface ClientAPI extends StateAPI {',]
 const dom = [''];
@@ -28,7 +28,7 @@ for (const src of await fs.readdir('./src/components')) {
     const cmp = src.split('.')[0];
     const tag = getTag(cmp);
     imports.push(`import { ${cmp} } from '../components/${cmp}';`);
-    ui.push(`   ${cmp}: (props: Dict) => ${cmp}(...getState(props, UI)),`);
+    ui.push(`   ${cmp}: (props: Dict) => ${cmp}(...createState(props, UI)),`);
     uiType.push(`   ${cmp}: typeof ${cmp};`);
     react.push(`            '${tag}': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement> & { class?: string, style?: {[key: string]: string | number} }, HTMLElement>;`)
     dom.push(`customElements.define('${tag}', class extends HTMLElement {});`);

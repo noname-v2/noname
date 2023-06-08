@@ -10,4 +10,10 @@ declare global {
 
     /** Stage main function. */
     type SF = (data: Dict, api: StageAPI) => any;
+
+    /** Type for point location */
+    type Point = {x: number, y: number};
+
+    /** Type for an area */
+    type Region = {x: [number, number], y: [number, number]};
 }

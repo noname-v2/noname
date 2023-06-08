@@ -15,7 +15,7 @@ export const App: FC = ({ page, $page }, { Arena, Room, Home, Zoom, Foreground, 
         else if (page === 'room') reply('arena');
         else if (page === 'arena') reply('home')
     }}>
-        <Zoom>
+        <Zoom cid='zoom'>
             <Foreground cid='app-fg' />
             <Main>
                 {main($page, 'out')}

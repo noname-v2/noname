@@ -1,10 +1,11 @@
 import { dur, animate, rendered } from './animate';
 import { db } from './db';
+import { bind, BindConfig } from './bind';
 import { useState, useEffect, createRef } from 'react';
 import type { ClientAPI } from './ui';
 
 /** Component states. */
-const states = new Map<string, Dict>();
+export const states = new Map<string, Dict>();
 
 /** React state setter. */
 const setters = new Map<string, React.Dispatch<Dict>>();
@@ -41,7 +42,7 @@ const send = () => {
 }
 
 /**
- * Update the state of a worker-created component.
+ * Update the state of a component with cid.
  * @param {string} cid - Unique ID of the component.
  * @param {Dict} diff - Changed to the component state.
  */
@@ -62,6 +63,17 @@ export function setState(cid: string, diff: Dict) {
     if (setters.has(cid)) {
         setters.get(cid)!(newState);
     }
+}
+
+/** Get the state of a component with cid. */
+export function getState(cid: string, key: string) {
+    const state = states.get(cid);
+
+    if (state) {
+        return state[key] ?? null;
+    }
+
+    return null;
 }
 
 /** Create a new state object with updated values. */
@@ -113,11 +125,20 @@ const wrap = (data: Dict, state: Dict, setter: React.Dispatch<Dict>) => {
 
             useEffect(() => {
                 if (cid && ref.current) {
+                    bind(rendered.get(cid)!, null);
                     rendered.set(cid, ref.current);
+                    
+                    const config = data.__bind__ ?? data.bind;
+                    if (config) {
+                        bind(ref.current, config);
+                    }
                 }
             });
 
             return ref;
+        },
+        bind: (bind: BindConfig) => {
+            data.__bind__ = bind;
         }
     }
 }
@@ -128,7 +149,7 @@ export type StateAPI = ReturnType<typeof wrap>;
  * Get the state of a worker-created component.
  * @param {Dict} props - Component property, will be registered if props.cid is string.
  */
-export function getState(props: Dict = {}, UI: any): [Dict, ClientAPI] {
+export function createState(props: Dict = {}, UI: any): [Dict, ClientAPI] {
     const cid = props.cid ?? null;
     const data: Dict = {};
     

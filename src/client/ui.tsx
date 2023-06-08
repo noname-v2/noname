@@ -1,4 +1,4 @@
-import { getState, StateAPI } from './state';
+import { createState, StateAPI } from './state';
 import { App } from '../components/App';
 import { Arena } from '../components/Arena';
 import { Background } from '../components/Background';
@@ -8,14 +8,14 @@ import { Main } from '../components/Main';
 import { Room } from '../components/Room';
 import { Zoom } from '../components/Zoom';
 export const UI = {
-   App: (props: Dict) => App(...getState(props, UI)),
-   Arena: (props: Dict) => Arena(...getState(props, UI)),
-   Background: (props: Dict) => Background(...getState(props, UI)),
-   Foreground: (props: Dict) => Foreground(...getState(props, UI)),
-   Home: (props: Dict) => Home(...getState(props, UI)),
-   Main: (props: Dict) => Main(...getState(props, UI)),
-   Room: (props: Dict) => Room(...getState(props, UI)),
-   Zoom: (props: Dict) => Zoom(...getState(props, UI)),
+   App: (props: Dict) => App(...createState(props, UI)),
+   Arena: (props: Dict) => Arena(...createState(props, UI)),
+   Background: (props: Dict) => Background(...createState(props, UI)),
+   Foreground: (props: Dict) => Foreground(...createState(props, UI)),
+   Home: (props: Dict) => Home(...createState(props, UI)),
+   Main: (props: Dict) => Main(...createState(props, UI)),
+   Room: (props: Dict) => Room(...createState(props, UI)),
+   Zoom: (props: Dict) => Zoom(...createState(props, UI)),
 };
 export interface ClientAPI extends StateAPI {
    App: typeof App;
