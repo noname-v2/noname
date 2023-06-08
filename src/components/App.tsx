@@ -1,4 +1,5 @@
-export const App: FC = ({ page, $page }, { Arena, Room, Home, Zoom, Foreground, Main, Background, refresh, reply }) => {
+export const App: FC = ({ page, $page }, { Arena, Room, Home, Zoom, Foreground, Main, Background, refresh, reply, ref, bind }) => {
+    // determine the main component
     const main = (p: string, a: 'in' | 'out') => {
         if (p === 'arena') return <Arena cid='arena' state={a=='in'?'jump':a} />;
         if (p === 'room') return <Room cid='room' state={a} />;
@@ -6,15 +7,19 @@ export const App: FC = ({ page, $page }, { Arena, Room, Home, Zoom, Foreground, 
         return '';
     }
 
+    // delete old elements after fade out animation is done
     if ($page) {
         refresh();
     }
 
-    return <nn-app onClick={() => {
+    // set click event
+    bind(() => {
         if (page === 'home') reply('room');
         else if (page === 'room') reply('arena');
         else if (page === 'arena') reply('home')
-    }}>
+    });
+
+    return <nn-app ref={ref()}>
         <Zoom cid='zoom'>
             <Foreground cid='app-fg' />
             <Main>

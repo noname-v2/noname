@@ -1,4 +1,5 @@
 import { android, ios } from '../platform';
+import { db } from './db';
 import { getState } from './state';
 
 /** Type for point location from an event. */
@@ -187,9 +188,9 @@ function pointerEnd(touch: boolean) {
             dispatchMoveEnd(moving[0]);
         }
 
-        // re-enable event trigger after 310ms (slightly > app.css.transition)
+        // re-enable event trigger after 100ms to avoid accidental double click
         if (dispatched) {
-            window.setTimeout(() => dispatched = false, 310);
+            window.setTimeout(() => dispatched = false, db?.get('click-timeout') ?? 100);
         }
     }
 
