@@ -124,12 +124,15 @@ const wrap = (data: Dict, state: Dict, setter: React.Dispatch<Dict>) => {
             data.__ref__ = ref;
 
             useEffect(() => {
-                if (cid && ref.current) {
-                    bind(rendered.get(cid)!, null);
-                    rendered.set(cid, ref.current);
+                if (ref.current) {
+                    if (cid) {
+                        rendered.set(cid, ref.current);
+                        bind(rendered.get(cid)!, null);
+                    }
                     
                     const config = data.__bind__ ?? data.bind;
                     if (config) {
+                        console.log('>>>', config, ref.current)
                         bind(ref.current, config);
                     }
                 }
@@ -152,17 +155,12 @@ export type StateAPI = ReturnType<typeof wrap>;
 export function createState(props: Dict = {}, UI: any): [Dict, ClientAPI] {
     const cid = props.cid ?? null;
     const data: Dict = {};
-    
-    for (const key in props) {
-        data[key] = props[key];
-    }
+
+    Object.assign(data, props);
     
     // merge props and state for components with cid
     const [state, setter] = useState(states.get(cid) ?? { cid });
-
-    for (const key in state) {
-        data[key] = state[key];
-    }
+    Object.assign(data, state);
 
     // update state and setter
     if (cid) {
@@ -171,11 +169,8 @@ export function createState(props: Dict = {}, UI: any): [Dict, ClientAPI] {
     }
 
     // create a copy of UI object that wraps cid
-    const ui: Partial<ClientAPI> = wrap(data, state, setter);
-
-    for (const key in UI) {
-        (ui as any)[key] = UI[key];
-    }
+    const ui = wrap(data, state, setter);
+    Object.assign(ui, UI);
 
     return [data, ui as ClientAPI];
 }

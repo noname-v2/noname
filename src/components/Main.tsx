@@ -1,3 +1,3 @@
-export const Main: FC = ({children}) => {
-    return <nn-main>{children}</nn-main>
+export const Main: FC = ({children}, {ref}) => {
+    return <nn-main ref={ref()}>{children}</nn-main>
 };

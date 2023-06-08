@@ -12,3 +12,7 @@ html, body {
 #root, nn-foreground, nn-main, nn-background {
 	@include layer;
 }
+
+nn-foreground {
+	pointer-events: none;
+}
