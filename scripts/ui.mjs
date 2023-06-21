@@ -1,9 +1,8 @@
 import {promises as fs} from 'fs';
 
-const imports = [`import { createState, StateAPI } from './state';`];
-const ui = ['', 'export const UI = {',];
-const uiType = ['', 'export interface ClientAPI extends StateAPI {',]
-const dom = [''];
+const imports = [`import { createState } from './state';`, `import { register } from './components';`];
+const ui = [''];
+const uiType = ['', 'export interface UIDict {',]
 const react = [
     `import * as React from 'react';`,
     'declare global {',
@@ -12,26 +11,12 @@ const react = [
 ];
 const sheets = [`@import 'src/css/mixin.scss';`];
 
-function getTag(cmp) {
-    let tag = 'nn-' + cmp[0].toLowerCase();
-    for (let i = 1; i < cmp.length; i++) {
-        const c = cmp[i].toLowerCase();
-        if (c !== cmp[i]) {
-            tag += '-';
-        }
-        tag += c;
-    }
-    return tag;
-}
-
 for (const src of await fs.readdir('./src/components')) {
     const cmp = src.split('.')[0];
-    const tag = getTag(cmp);
-    imports.push(`import { ${cmp} } from '../components/${cmp}';`);
-    ui.push(`   ${cmp}: (props: Dict) => ${cmp}(...createState(props, UI)),`);
+    imports.push(`import ${cmp} from '../components/${cmp}';`);
+    ui.push(`register(${cmp}, null, createState);`);
     uiType.push(`   ${cmp}: typeof ${cmp};`);
-    react.push(`            '${tag}': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement> & { class?: string, style?: {[key: string]: string | number} }, HTMLElement>;`)
-    dom.push(`customElements.define('${tag}', class extends HTMLElement {});`);
+    react.push(`            'nn-${cmp}': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement> & { class?: string, style?: {[key: string]: string | number} }, HTMLElement>;`);
 }
 
 for (const src of await fs.readdir('./src/css')) {
@@ -41,11 +26,10 @@ for (const src of await fs.readdir('./src/css')) {
     sheets.push(`@import 'src/css/${src}';`);
 }
 
-ui.push('};');
-uiType.push('   [key: `${Uppercase<string>}${string}`]: FC;');
+uiType.push('   [key: CapString]: FC;');
 uiType.push('};');
 react.push('        }\n    }\n}');
 
-await fs.writeFile('src/client/ui.tsx', imports.join('\n') + ui.join('\n') + uiType.join('\n') + dom.join('\n'));
+await fs.writeFile('src/client/ui.tsx', imports.join('\n') + ui.join('\n') + uiType.join('\n'));
 await fs.writeFile('src/react.d.ts', react.join('\n'));
 await fs.writeFile('src/css/index.scss', sheets.join('\n'));

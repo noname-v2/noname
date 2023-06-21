@@ -1,3 +1,5 @@
-export const Background: FC = ({children}) => {
-    return <nn-background>{children}</nn-background>
-};
+export default {
+    Background: ({children}) => {
+        return <nn-background>{children}</nn-background>
+    }
+} as FCM;

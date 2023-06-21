@@ -1,8 +1,8 @@
 import { dur, animate, rendered } from './animate';
 import { db } from './db';
 import { bind, BindConfig } from './bind';
+import { ui } from './components';
 import { useState, useEffect, createRef } from 'react';
-import type { ClientAPI } from './ui';
 
 /** Component states. */
 export const states = new Map<string, Dict>();
@@ -99,10 +99,12 @@ const getNewState = (oldState: Dict, diff: Dict) => {
 /** Wrap functions for FC. */
 const wrap = (data: Dict, state: Dict, setter: React.Dispatch<Dict>) => {
     const cid = data.cid;
+    // const db = new Database(data.__ext__); TODO: scoped database for the extension
 
     return {
         reply, sync, send, dur, db,
-        animate: ((...args) => animate.apply(data, args)) as OmitThisParameter<typeof animate>,
+        animate: (...args: Parameters<typeof animate>) => animate.apply(data, args),
+        ui: (ext?: string) => ui(ext, data.deviate),
         refresh: (delay: number = 1) => {
             if (cid) {
                 pendUpdate(cid, delay);
@@ -130,9 +132,8 @@ const wrap = (data: Dict, state: Dict, setter: React.Dispatch<Dict>) => {
                         bind(rendered.get(cid)!, null);
                     }
                     
-                    const config = data.__bind__ ?? data.bind;
+                    const config = data.bind ?? data.__bind__;
                     if (config) {
-                        console.log('>>>', config, ref.current)
                         bind(ref.current, config);
                     }
                 }
@@ -143,24 +144,27 @@ const wrap = (data: Dict, state: Dict, setter: React.Dispatch<Dict>) => {
         bind: (bind: BindConfig) => {
             data.__bind__ = bind;
         }
-    }
+    };
 }
 
 export type StateAPI = ReturnType<typeof wrap>;
 
 /**
- * Get the state of a worker-created component.
+ * Create the state of a component.
  * @param {Dict} props - Component property, will be registered if props.cid is string.
+ * @param {string | null} ext - Name of the extension that defines the component.
  */
-export function createState(props: Dict = {}, UI: any): [Dict, ClientAPI] {
+export function createState(props: FCProps = {}, ext: string | null): [Dict, StateAPI] {
     const cid = props.cid ?? null;
     const data: Dict = {};
 
     Object.assign(data, props);
     
     // merge props and state for components with cid
-    const [state, setter] = useState(states.get(cid) ?? { cid });
+    const [state, setter] = useState(states.get(cid!) ?? { cid });
     Object.assign(data, state);
+
+    data.__ext__ = ext;
 
     // update state and setter
     if (cid) {
@@ -168,11 +172,7 @@ export function createState(props: Dict = {}, UI: any): [Dict, ClientAPI] {
         setters.set(cid, setter);
     }
 
-    // create a copy of UI object that wraps cid
-    const ui = wrap(data, state, setter);
-    Object.assign(ui, UI);
-
-    return [data, ui as ClientAPI];
+    return [data, wrap(data, state, setter)];
 }
 
 /**

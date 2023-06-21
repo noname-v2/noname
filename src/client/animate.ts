@@ -35,8 +35,6 @@ type AnimationFrame = Partial<{
 
 /** Type for animation configuration of a component. */
 type AnimationConfig = {
-    in: AnimationFrame;
-    out: AnimationFrame;
     [key: string]: AnimationFrame | AnimationFrame[];
 };
 
@@ -44,19 +42,27 @@ type AnimationConfig = {
 export function animate(this: Dict, anims: Partial<AnimationConfig>, duration?: AnimationDuration) {
     const cid = this.cid;
     const from = getCurrent(cid);
-    const state = this.state;
+    const state = this.animate;
 
     duration = dur(duration);
 
     // default properties when component is mounted / unmounted
     anims.in ??= {};
-    anims.in.opacity ??= 1;
-    anims.in.rotate ??= 0;
-    anims.in.scale ??= 1;
-    anims.in.translate ??= 0;
+    if (Array.isArray(anims.in) && !anims.in.length) {
+        anims.in.push({});
+    }
+    const animsIn = Array.isArray(anims.in) ? anims.in[anims.in.length-1] : anims.in;
+    animsIn.opacity ??= 1;
+    animsIn.rotate ??= 0;
+    animsIn.scale ??= 1;
+    animsIn.translate ??= 0;
     
     anims.out ??= {};
-    anims.out.opacity ??= 0;
+    if (Array.isArray(anims.out) && !anims.out.length) {
+        anims.out.push({});
+    }
+    const animsOut = Array.isArray(anims.out) ? anims.out[anims.out.length-1] : anims.out;
+    animsOut.opacity ??= 0;
 
     // trigger animation when state property changes
     useEffect(() => {
@@ -68,15 +74,15 @@ export function animate(this: Dict, anims: Partial<AnimationConfig>, duration?: 
         }
         
         const frames = Array.isArray(anim) ? anim.slice(0) : [anim];
-        frames.unshift(from ?? anims.out!);
+        frames.unshift(from ?? animsOut!);
         (duration as number) *= Math.sqrt(frames.length - 1);
         
         // fill default animation property
         frames.forEach(frame => {
-            frame.opacity ??= anims.in!.opacity;
-            frame.rotate ??= anims.in!.rotate;
-            frame.scale ??= anims.in!.scale;
-            frame.translate ??= anims.in!.translate;
+            frame.opacity ??= animsIn.opacity;
+            frame.rotate ??= animsIn.rotate;
+            frame.scale ??= animsIn.scale;
+            frame.translate ??= animsIn.translate;
         });
 
         target.getAnimations().map(anim => anim.cancel());
