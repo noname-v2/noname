@@ -37,7 +37,7 @@ class Stage {
     }
 
     get extension() {
-        return this.#main[0] === '#' ? null : this.#main.split(':')[0];
+        return this.#main.split('#')[0] || null;
     }
 
     constructor(main: string, props: string | Dict) {
@@ -68,15 +68,16 @@ class Stage {
     }
 
     async progress(main: string, props: string | Dict) {
-        if (main[0] !== '#') {
-            // change to absolute extension function reference
-            const path = main.split(':');
-            if (path.length !== 2) {
-                if (path.length !== 1 || !this.extension) {
-                    throw('Invalid function string.');
-                }
-                main = this.extension + ':' + path[0];
+        if (!main.includes('#')) {
+            // change to absolute function reference, priority: extension > mode > built-in
+            const m = this.extension + '#' + main;
+            if (lib.get(m)) {
+                main = m;
             }
+            else {
+                main = '#' + main;
+            }
+            // TODO: implement current mode
         }
 
         if (this.#history[this.#step]?.match(main, props)) {

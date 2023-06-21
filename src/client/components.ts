@@ -57,17 +57,21 @@ export function init(mode?: string) {
 }
 
 /** Access components. */
-export const ui = (ext?: string, deviate?: Partial<UIDict>) => {
+export const ui = (ext?: string, cmpExt?: string, deviate?: Partial<UIDict>) => {
     const components = {} as UIDict;
 
-    if (ext) {
-        // copy components from an extension
-        const cmps = extensionUI.get(ext);
+    const copy = (e: string) => {
+        const cmps = extensionUI.get(e);
         if (cmps) {
             for (const [key, val] of cmps.entries()) {
                 components[key as CapString] = val;
             }
         }
+    }
+
+    if (ext) {
+        // copy components from target extension
+        copy(ext);
     }
     else {
         // copy built-in components
@@ -76,11 +80,13 @@ export const ui = (ext?: string, deviate?: Partial<UIDict>) => {
         }
 
         // copy components from current mode
-        const cmps = extensionUI.get(currentMode!);
-        if (cmps) {
-            for (const [key, val] of cmps.entries()) {
-                components[key as CapString] = val;
-            }
+        if (currentMode) {
+            copy(currentMode);
+        }
+
+        // copy components from the extension that defines current component
+        if (cmpExt) {
+            copy(cmpExt);
         }
     }
 

@@ -20,7 +20,7 @@ ready.then(db => {
         }
     });
 
-    lib.register('app', app);
+    lib.register('#app', app);
 
-    createRoot('app', {owner: me});
+    createRoot('#app', {owner: me});
 });

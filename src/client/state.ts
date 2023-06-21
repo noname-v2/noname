@@ -104,7 +104,7 @@ const wrap = (data: Dict, state: Dict, setter: React.Dispatch<Dict>) => {
     return {
         reply, sync, send, dur, db,
         animate: (...args: Parameters<typeof animate>) => animate.apply(data, args),
-        ui: (ext?: string) => ui(ext, data.deviate),
+        ui: (ext?: string) => ui(ext, data.__ext__, data.deviate),
         refresh: (delay: number = 1) => {
             if (cid) {
                 pendUpdate(cid, delay);
