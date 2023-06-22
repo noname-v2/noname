@@ -1,5 +1,5 @@
 import { hub } from './hub';
-import { lib } from './lib';
+import { lib, abs } from './lib';
 
 let currentStage: Stage;
 
@@ -55,7 +55,7 @@ class Stage {
 
     /** Execute the main function. */
     async run() {
-        const main = lib.get(this.#main);
+        const main = lib(this.#main, this.extension);
         if (main) {
             const parentStage = currentStage;
             currentStage = this;
@@ -68,16 +68,10 @@ class Stage {
     }
 
     async progress(main: string, props: string | Dict) {
-        if (!main.includes('#')) {
-            // change to absolute function reference, priority: extension > mode > built-in
-            const m = this.extension + '#' + main;
-            if (lib.get(m)) {
-                main = m;
-            }
-            else {
-                main = '#' + main;
-            }
-            // TODO: implement current mode
+        main = abs(main, this.extension) as string;
+
+        if (!main) {
+            return null;
         }
 
         if (this.#history[this.#step]?.match(main, props)) {
@@ -86,6 +80,7 @@ class Stage {
             return this.#history[this.#step-1].result;
         }
         else {
+            // create a new child stage
             this.#history.length = this.#step;
             const stage = new Stage(main, props);
             this.#history.push(stage);

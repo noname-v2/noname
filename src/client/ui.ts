@@ -19,6 +19,7 @@ let currentMode: string | null = null;
  * Register a component and its style.
  * @param {FCM} mod - Dict that contains component and style definition.
  * @param {string | undefined} ext - The extension that defines the component.
+ * @param {typeof createState} cs - Pass createState() to avoid circular import.
  */
 export function register(mod: FCM, ext: string | null, cs: typeof createState) {
     for (const key in mod) {
@@ -53,7 +54,7 @@ export function register(mod: FCM, ext: string | null, cs: typeof createState) {
 
 /**
  * Remove all custom components and styles from extensions.
- * @param {string | undefined} mode - Current game mode.
+ * @param {string | undefined} mode - New game mode.
  */
 export function init(mode?: string) {
     extensionUI.clear();

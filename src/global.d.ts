@@ -50,6 +50,11 @@ declare global {
     /** Stage main function. */
     type SF = (data: Dict, api: StageAPI) => any;
 
+    /** A module that exports function component. */
+    type SFM = {
+        [key: string]: SF;
+    };
+
     /** Type for point location */
     type Point = {x: number, y: number};
 

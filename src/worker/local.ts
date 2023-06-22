@@ -2,7 +2,7 @@ import { hub } from './hub';
 import { uid } from '../utils';
 import { createRoot } from './stage';
 import { app } from './app';
-import { lib } from './lib';
+import { register } from './lib';
 import { ready} from '../client/db';
 
 ready.then(db => {
@@ -10,7 +10,7 @@ ready.then(db => {
         db.set('noname-uid', uid());
     }
     const me = db.get('noname-uid');
-    self.onmessage = ({data}) => {
+    self.onmessage = ({ data }) => {
         hub.onmessage(me, data)
     }
     
@@ -20,7 +20,7 @@ ready.then(db => {
         }
     });
 
-    lib.register('#app', app);
+    register({ app }, null);
 
     createRoot('#app', {owner: me});
 });
