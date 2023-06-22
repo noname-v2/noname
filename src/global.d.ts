@@ -1,4 +1,3 @@
-import type { UIDict } from './client/ui';
 import type { StateAPI } from './client/state';
 import type { StageAPI } from './worker/stage';
 import type { BindConfig } from './client/bind';

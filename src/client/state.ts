@@ -1,7 +1,7 @@
 import { dur, animate, rendered } from './animate';
 import { db } from './db';
 import { bind, BindConfig } from './bind';
-import { ui } from './components';
+import { ui, UIType } from './components';
 import { useState, useEffect, createRef } from 'react';
 
 /** Component states. */
@@ -103,8 +103,8 @@ const wrap = (data: Dict, state: Dict, setter: React.Dispatch<Dict>) => {
 
     return {
         reply, sync, send, dur, db,
+        ui: ((ext?: string) => ui(ext, data.__ext__, data.deviate)) as UIType,
         animate: (...args: Parameters<typeof animate>) => animate.apply(data, args),
-        ui: (ext?: string) => ui(ext, data.__ext__, data.deviate),
         refresh: (delay: number = 1) => {
             if (cid) {
                 pendUpdate(cid, delay);

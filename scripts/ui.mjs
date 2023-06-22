@@ -2,7 +2,6 @@ import {promises as fs} from 'fs';
 
 const imports = [`import { createState } from './state';`, `import { register } from './components';`];
 const ui = [''];
-const uiType = ['', 'export interface UIDict {',]
 const react = [
     `import * as React from 'react';`,
     'declare global {',
@@ -15,7 +14,6 @@ for (const src of await fs.readdir('./src/components')) {
     const cmp = src.split('.')[0];
     imports.push(`import ${cmp} from '../components/${cmp}';`);
     ui.push(`register(${cmp}, null, createState);`);
-    uiType.push(`   ${cmp}: typeof ${cmp};`);
     react.push(`            'nn-${cmp}': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement> & { class?: string, style?: {[key: string]: string | number} }, HTMLElement>;`);
 }
 
@@ -26,10 +24,8 @@ for (const src of await fs.readdir('./src/css')) {
     sheets.push(`@import 'src/css/${src}';`);
 }
 
-uiType.push('   [key: CapString]: FC;');
-uiType.push('};');
 react.push('        }\n    }\n}');
 
-await fs.writeFile('src/client/ui.tsx', imports.join('\n') + ui.join('\n') + uiType.join('\n'));
+await fs.writeFile('src/client/ui.tsx', imports.join('\n') + ui.join('\n'));
 await fs.writeFile('src/react.d.ts', react.join('\n'));
 await fs.writeFile('src/css/index.scss', sheets.join('\n'));

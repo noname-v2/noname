@@ -6,7 +6,7 @@ import { createWorker } from './client/state';
 
 const container = document.getElementById('root');
 const root = createRoot(container!);
-const { App } = ui();
+const App = ui('App') as FC;
 root.render(
     <React.StrictMode>
         <App cid='app' />

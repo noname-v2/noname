@@ -1,12 +1,11 @@
 export default {
     App: ({ page, $page }, { ui, refresh, reply, ref, bind }) => {
-        const cmps = ui()
-        const { Zoom, Foreground, Main, Background  } = cmps;
+        const { Zoom, Foreground, Main, Background  } = ui();
     
         // capatalize page ID to get corresponding component (e.g. home -> Home)
         const cap = (p: string) => p?.replace(/[a-z]/, c => c.toUpperCase()) as CapString;
-        const Content = cmps[cap(page)];
-        const OldContent = cmps[cap($page)];
+        const Content = ui(cap(page));
+        const OldContent = ui(cap($page));
     
         // delete old elements after fade out animation is done
         if ($page) {

@@ -1,5 +1,4 @@
 import type { createState } from './state';
-import type { UIDict } from './ui';
 
 /** Built-in components. */
 const baseUI: UIMap = new Map();
@@ -57,40 +56,50 @@ export function init(mode?: string) {
 }
 
 /** Access components. */
-export const ui = (ext?: string, cmpExt?: string, deviate?: Partial<UIDict>) => {
-    const components = {} as UIDict;
+type UIDict = { [key: CapString ]: FC };
+export type UIType = ((path: string) => FC) & ((path?: undefined) => UIDict);
+export const ui = (path?: string, ext?: string, deviate?: Partial<UIDict>): FC | UIDict => {
+    if (path) {
+        if (path.includes('#')) {
+            // get components from absolute reference
+            const [ext, cmp] = path.split('#');
 
-    const copy = (e: string) => {
-        const cmps = extensionUI.get(e);
-        if (cmps) {
-            for (const [key, val] of cmps.entries()) {
-                components[key as CapString] = val;
+            if (ext) {
+                return extensionUI.get(ext)?.get(cmp)!;
             }
+            
+            return baseUI.get(cmp)!;
         }
-    }
 
-    if (ext) {
-        // copy components from target extension
-        copy(ext);
+        // get a component from relative reference (priority: current extension > current mode > built-in)
+        return extensionUI.get(ext!)?.get(path) ?? extensionUI.get(currentMode!)?.get(path) ?? baseUI.get(path)!;
     }
     else {
-        // copy built-in components
-        for (const [key, val] of baseUI.entries()) {
-            components[key as CapString] = val;
+        const components = {} as UIDict;
+
+        const copy = (map?: UIMap) => {
+            if (map) {
+                for (const [key, val] of map.entries()) {
+                    components[key as CapString] = val;
+                }
+            }
         }
+
+        // copy built-in components
+        copy(baseUI);
 
         // copy components from current mode
         if (currentMode) {
-            copy(currentMode);
+            copy(extensionUI.get(currentMode));
         }
 
         // copy components from the extension that defines current component
-        if (cmpExt) {
-            copy(cmpExt);
+        if (ext) {
+            copy(extensionUI.get(ext));
         }
+
+        Object.assign(components, deviate)
+    
+        return components;
     }
-
-    Object.assign(components, deviate)
-
-    return components;
-}
+};

@@ -16,14 +16,3 @@ register(home, null, createState);
 register(main, null, createState);
 register(room, null, createState);
 register(zoom, null, createState);
-export interface UIDict {
-   app: typeof app;
-   arena: typeof arena;
-   background: typeof background;
-   foreground: typeof foreground;
-   home: typeof home;
-   main: typeof main;
-   room: typeof room;
-   zoom: typeof zoom;
-   [key: CapString]: FC;
-};
