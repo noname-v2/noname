@@ -1,5 +1,8 @@
 import type { createState } from './state';
 
+/** Type for a map that contains component definitions. */
+type UIMap = Map<string, (props: Dict) => JSX.Element>;
+
 /** Built-in components. */
 const baseUI: UIMap = new Map();
 
@@ -44,6 +47,8 @@ export function register(mod: FCM, ext: string | null, cs: typeof createState) {
 
         (ext ? extensionUI.get(ext)! : baseUI).set(key, (props: Dict) => mod[key as CapString](...cs(props, ext)));
     }
+
+    // TODO: add CSS
 }
 
 /**

@@ -1,7 +1,7 @@
 import { dur, animate, rendered } from './animate';
 import { db } from './db';
 import { bind, BindConfig } from './bind';
-import { ui, UIType } from './components';
+import { ui, UIType } from './ui';
 import { useState, useEffect, createRef } from 'react';
 
 /** Component states. */

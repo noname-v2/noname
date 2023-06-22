@@ -9,9 +9,6 @@ declare global {
     /** Plain object. */
     type Dict<T=any> = {[key: string]: T};
 
-    /** Type for a map that contains component definitions. */
-    type UIMap = Map<string, (props: Dict) => JSX.Element>;
-
     /** CSS values (number is converted to px, array is joined with a space). */
     type CSSValue = number | string | (string | number)[];
 

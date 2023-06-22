@@ -1,3 +1,6 @@
+/** Build-in stage functions. */
+const baseLib = new Map<string, SF>();
+
 /** Function library for serialization. */
 class Library {
     /** Built-in functions. */

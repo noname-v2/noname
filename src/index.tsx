@@ -1,7 +1,7 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import './client/ui';
-import { ui } from './client/components';
+import './components';
+import { ui } from './client/ui';
 import { createWorker } from './client/state';
 
 const container = document.getElementById('root');
