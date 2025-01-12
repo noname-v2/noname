@@ -1,111 +1,30 @@
-import type { createState } from './state';
+import { isCapatalized, toSnake } from "../utils";
+import { Component } from "./component";
 
-/** Type for a map that contains component definitions. */
-type UIMap = Map<string, (props: Dict) => JSX.Element>;
+const _ui = {} as UI;
 
-/** Built-in components. */
-const baseUI: UIMap = new Map();
-
-/** Components defined by extensions. */
-const extensionUI: Map<string, UIMap> = new Map();
-
-/** Custom HTML tags defined. */
-const customTags = new Set<string>();
-
-/** Extension that defines current game mode. */
-let currentMode: string | null = null;
-
-/**
- * Register a component and its style.
- * @param {FCM} mod - Dict that contains component and style definition.
- * @param {string | undefined} ext - The extension that defines the component.
- * @param {typeof createState} cs - Pass createState() to avoid circular import.
- */
-export function register(mod: FCM, ext: string | null, cs: typeof createState) {
-    for (const key in mod) {
-        if (/[A-Z]/.test(key[0])) {
-            let tag = ext ? 'nx-' : 'nn-';
-            tag += key[0].toLowerCase();
-
-            for (let i = 1; i < key.length; i++) {
-                if (/[A-Z]/.test(key[i])) {
-                    tag += '-' + key[i].toLowerCase();
-                }
-                else {
-                    tag += key[i];
-                }
-            }
-
-            if (!customTags.has(tag)) {
-                customTags.add(tag);
-                customElements.define(tag, class extends HTMLElement {});
-            }
-        }
-
-        if (ext && !extensionUI.has(ext)) {
-            extensionUI.set(ext, new Map())
-        }
-
-        (ext ? extensionUI.get(ext)! : baseUI).set(key, (props: Dict) => mod[key as CapString](...cs(props, ext)));
+function _define(name: Capitalize<string>, component: typeof Component) {
+    if (!isCapatalized(name)) {
+        throw new Error('Component name must be capatalized');
     }
-
-    // TODO: add CSS
+    _ui[name] = component;
+    _ui[toSnake(name)] = (...args: (Component | string | Dict)[]) => {return args};
 }
 
-/**
- * Remove all custom components and styles from extensions.
- * @param {string | undefined} mode - New game mode.
- */
-export function init(mode?: string) {
-    extensionUI.clear();
-    currentMode = mode ?? null;
+export function defineComponent(component: typeof Component) {
+    _define(component.name as Capitalize<string>, component);
 }
 
-/** Access components. */
-type UIDict = { [key: CapString ]: FC };
-export type UIType = ((path: string) => FC) & ((path?: undefined) => UIDict);
-export const ui = (path?: string, ext?: string, deviate?: Partial<UIDict>): FC | UIDict => {
-    if (path) {
-        if (path.includes('#')) {
-            // get components from absolute reference
-            const [ext, cmp] = path.split('#');
+export function extendComponent(name: Capitalize<string>, extender: (component: typeof Component) => typeof Component) {
+    _define(name, extender(_ui[name]));
+}
 
-            if (ext) {
-                return extensionUI.get(ext)?.get(cmp)!;
-            }
-            
-            return baseUI.get(cmp)!;
-        }
+export function extendRootComponent() {
 
-        // get a component from relative reference (priority: current extension > current mode > built-in)
-        return extensionUI.get(ext!)?.get(path) ?? extensionUI.get(currentMode!)?.get(path) ?? baseUI.get(path)!;
+}
+
+export const ui = new Proxy(_ui, {
+    get: function(target, prop: Capitalize<string> | Uncapitalize<string>) {
+        return target[prop];
     }
-    else {
-        const components = {} as UIDict;
-
-        const copy = (map?: UIMap) => {
-            if (map) {
-                for (const [key, val] of map.entries()) {
-                    components[key as CapString] = val;
-                }
-            }
-        }
-
-        // copy built-in components
-        copy(baseUI);
-
-        // copy components from current mode
-        if (currentMode) {
-            copy(extensionUI.get(currentMode));
-        }
-
-        // copy components from the extension that defines current component
-        if (ext) {
-            copy(extensionUI.get(ext));
-        }
-
-        Object.assign(components, deviate)
-    
-        return components;
-    }
-};
+}) as UI;

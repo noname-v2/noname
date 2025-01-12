@@ -4,33 +4,17 @@
   "description": "An Amazing Capacitor App",
   "main": "index.js",
   "keywords": [
-    "capacitor",
+    "card",
+    "game",
     "mobile"
   ],
   "scripts": {
-    "start": "vite",
     "ui": "node scripts/ui.mjs",
-    "build": "npm run ui && vite build",
-    "preview": "vite preview",
-    "ios": "npm run build && npx capacitor copy ios && npx capacitor open ios"
-  },
-  "dependencies": {
-    "@capacitor/camera": "^5.0.2",
-    "@capacitor/core": "^5.0.4",
-    "@capacitor/filesystem": "^5.0.2",
-    "@capacitor/ios": "^5.0.4",
-    "@capacitor/splash-screen": "^5.0.2",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "build": "npm run ui && npx tsc"
   },
   "devDependencies": {
-    "@capacitor/cli": "^5.0.4",
-    "@types/react": "^18.0.35",
-    "@types/react-dom": "^18.0.11",
-    "@vitejs/plugin-react": "^3.1.0",
-    "sass": "^1.62.0",
-    "typescript": "^5.0.4",
-    "vite": "^4.2.1"
+    "electron": "^33.3.1",
+    "typescript": "^5.7.3"
   },
   "author": "",
   "license": "ISC"

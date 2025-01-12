@@ -23,3 +23,38 @@ export function uid() {
         return String.fromCharCode(c < 26 ? c + 65 : (c < 52 ? c + 71 : c - 4));
     }).join('');
 }
+
+/** Check if a string is capatalized.
+ * @param str The string to check.
+ */
+export function isCapatalized(str: string) {
+    return str.charAt(0) === str.charAt(0).toUpperCase();
+}
+
+/** Capitalize a string.
+ * @param str The string to capitalize.
+ */
+export function capitalize(str: string): Capitalize<string> {
+    return (str.charAt(0).toUpperCase() + str.slice(1)) as Capitalize<string>;
+}
+
+/** Uncapitalize a string.
+ * @param str The string to uncapitalize.
+ */
+export function unCapitalize(str: string): Uncapitalize<string> {
+    return (str.charAt(0).toLowerCase() + str.slice(1)) as Uncapitalize<string>;
+}
+
+/** Convert a pascal string to a case string.
+ * @param str The string to convert.
+ */
+export function toSnake(str: string): Uncapitalize<string> {
+    return str.replace(/[A-Z]/g, c => `_${c.toLowerCase()}`) as Uncapitalize<string>;
+}
+
+/** Convert a snake string to a case string.
+ * @param str The string to convert.
+ */
+export function toCase(str: string) {
+    return str.replace(/_./g, c => c.charAt(1).toUpperCase());
+}
