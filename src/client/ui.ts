@@ -8,7 +8,7 @@ function _define(name: Capitalize<string>, component: typeof Component) {
         throw new Error('Component name must be capatalized');
     }
     _ui[name] = component;
-    _ui[toSnake(name)] = (...args: (Component | string | Dict)[]) => {return args};
+    _ui[toSnake(name)] = (...args: (Component | string | Dict)[]) => {console.log(args);return new Component({} as any)};
 }
 
 export function defineComponent(component: typeof Component) {
