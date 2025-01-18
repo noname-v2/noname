@@ -27,7 +27,7 @@ export function uid() {
 /** Check if a string is capatalized.
  * @param str The string to check.
  */
-export function isCapatalized(str: string) {
+export function isCapatalized(str: string): str is Capitalize<string> {
     return str.charAt(0) === str.charAt(0).toUpperCase();
 }
 

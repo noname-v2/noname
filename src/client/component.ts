@@ -1,8 +1,4 @@
-declare class _Component {
-    static name: Capitalize<string>;
-}
-
-export class Component implements _Component {
+export class Component {
     #state: Map<string, any> = new Map();
 
     // component that created this component (from constructor or render())

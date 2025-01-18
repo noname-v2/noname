@@ -58,6 +58,10 @@ declare global {
     /** Type for an area */
     type Region = {x: [number, number], y: [number, number]};
 
+    /** Type for a component. */
+    type Component = Component;
+    type ComponentType = typeof Component;
+
     /** Type for a function that returns component instance. */
     type FC = (...args: (Component | string | Dict)[]) => Component;
 
@@ -65,6 +69,14 @@ declare global {
     interface UI {
         [key: Capitalize<string>]: typeof Component;
         [key: Uncapitalize<string>]: FC;
+    }
+
+    /** Type for modes to define a component. */
+    enum ComponentMode {
+        SYSTEM, // define component
+        ROOT, // can extend any component
+        GAME, // can extend any game (non-system) component
+        DEFAULT // cannot extend any component
     }
 
     /** Type for a extension */

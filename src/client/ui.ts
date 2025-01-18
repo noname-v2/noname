@@ -1,30 +1,48 @@
 import { isCapatalized, toSnake } from "../utils";
 import { Component } from "./component";
+import { createFC } from "./dom";
 
-const _ui = {} as UI;
+/** Components defined before any extension is loaded. */
+export const systemComponents = new Set<Capitalize<string>>();
 
-function _define(name: Capitalize<string>, component: typeof Component) {
-    if (!isCapatalized(name)) {
-        throw new Error('Component name must be capatalized');
+/** Component constructors and function creators. */
+const components = {} as UI;
+
+/**
+ * Define a component.
+ * @param target Component class.
+ * @param mode Permission of the component defition.
+ */
+export function defineComponent(target: typeof Component, mode: ComponentMode) {
+    if (!isCapatalized(target.name)) {
+        throw new Error(`Component name ${name} must be capatalized`);
     }
-    _ui[name] = component;
-    _ui[toSnake(name)] = (...args: (Component | string | Dict)[]) => {console.log(args);return new Component({} as any)};
+
+    if (target.name in components) {
+        // extend existing component if mode is ROOT or GAME
+        // and component is subclass of the existing component
+        if ((mode === ComponentMode.ROOT ||
+            (mode === ComponentMode.GAME && !systemComponents.has(target.name))) &&
+            target.prototype instanceof components.get(target.name)!) { 
+            components[target.name] = target;
+            components[toSnake(target.name)] = createFC(target);
+        }
+        else {
+            throw new Error(`Component ${target.name} already defined`);
+        }
+    }
+    else {
+        if (mode === ComponentMode.SYSTEM) {
+            systemComponents.add(target.name);
+        }
+        components[target.name] = target;
+        components[toSnake(target.name)] = createFC(target);
+    }
 }
 
-export function defineComponent(component: typeof Component) {
-    _define(component.name as Capitalize<string>, component);
-}
-
-export function extendComponent(name: Capitalize<string>, extender: (component: typeof Component) => typeof Component) {
-    _define(name, extender(_ui[name]));
-}
-
-export function extendRootComponent() {
-
-}
-
-export const ui = new Proxy(_ui, {
+/** Read-only UI getter for extensions. */
+export const ui = new Proxy(components, {
     get: function(target, prop: Capitalize<string> | Uncapitalize<string>) {
         return target[prop];
     }
-}) as UI;
+});

@@ -1,7 +1,17 @@
-export default function({ui, defineComponent}: any) {
-    defineComponent('Background');
+export const components = (ui: any) => [
+    /**
+     * Background component.
+     */
+    class Background extends ui.Component {
+        render() {
+            return ui.div({style: {position: 'absolute', width: '100%', height: '100%', backgroundColor: 'black'}});
+        }
+    },
 
-    defineComponent(class App extends ui.Component {
+    /**
+     * App component.
+     */
+    class App extends ui.Component {
         render() {
             ui.zoom(
                 ui.background(),
@@ -13,11 +23,5 @@ export default function({ui, defineComponent}: any) {
         main() {
             return ui[this.state('page') ?? 'home'] ?? null;
         }
-    });
-
-    defineComponent(class App extends ui.Component {
-        render() {
-            ui.gallery();
-        }
-    });
-};
+    }
+];
