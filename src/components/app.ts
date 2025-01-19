@@ -1,27 +1,29 @@
-export const components = (ui: any) => [
-    /**
-     * Background component.
-     */
-    class Background extends ui.Component {
-        render() {
-            return ui.div({style: {position: 'absolute', width: '100%', height: '100%', backgroundColor: 'black'}});
-        }
-    },
+export default {
+    components: ui => [
+        /**
+         * Background component.
+         */
+        class Background extends ui.Component {
+            render() {
+                return ui.div({style: {position: 'absolute', width: '100%', height: '100%', backgroundColor: 'black'}});
+            }
+        },
 
-    /**
-     * App component.
-     */
-    class App extends ui.Component {
-        render() {
-            ui.zoom(
-                ui.background(),
-                this.main(),
-                ui.foreground()
-            );
-        }
+        /**
+         * App component.
+         */
+        class App extends ui.Component {
+            render() {
+                ui.zoom(
+                    ui.background(),
+                    this.main(),
+                    ui.foreground()
+                );
+            }
 
-        main() {
-            return ui[this.state('page') ?? 'home'] ?? null;
+            main() {
+                return ui[this.state('page') ?? 'home'] ?? null;
+            }
         }
-    }
-];
+    ]
+} as Extension;

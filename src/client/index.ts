@@ -1,0 +1,1 @@
+// generated from scripts/component.ts, do not modify

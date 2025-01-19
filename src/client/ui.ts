@@ -3,7 +3,7 @@ import { Component } from "./component";
 import { createFC } from "./dom";
 
 /** Components defined before any extension is loaded. */
-export const systemComponents = new Set<Capitalize<string>>();
+const systemComponents = new Set<Capitalize<string>>();
 
 /** Component constructors and function creators. */
 const components = {} as UI;
@@ -15,15 +15,17 @@ const components = {} as UI;
  */
 export function defineComponent(target: typeof Component, mode: ComponentMode) {
     if (!isCapatalized(target.name)) {
-        throw new Error(`Component name ${name} must be capatalized`);
+        throw new Error(`Component name ${target.name} must be capatalized`);
     }
 
     if (target.name in components) {
-        // extend existing component if mode is ROOT or GAME
+        // extend existing component if
+        // 1) mode is ROOT, or
+        // 2) mode is GAME and target is not a system component
         // and component is subclass of the existing component
         if ((mode === ComponentMode.ROOT ||
             (mode === ComponentMode.GAME && !systemComponents.has(target.name))) &&
-            target.prototype instanceof components.get(target.name)!) { 
+            target.prototype instanceof components[target.name]) { 
             components[target.name] = target;
             components[toSnake(target.name)] = createFC(target);
         }
@@ -37,6 +39,12 @@ export function defineComponent(target: typeof Component, mode: ComponentMode) {
         }
         components[target.name] = target;
         components[toSnake(target.name)] = createFC(target);
+    }
+}
+
+export function defineComponents(components: Dict<typeof Component>, mode: ComponentMode) {
+    for (const key in components) {
+        defineComponent(components[key], mode);
     }
 }
 

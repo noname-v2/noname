@@ -80,25 +80,12 @@ declare global {
     }
 
     /** Type for a extension */
-    interface ExtensionAPI {
-        ui: UI;
-        defineComponent: typeof defineComponent;
-        extendComponent: typeof extendComponent;
-        defineCSS: typeof defineCSS;
-        defineGame: () => void;
-        definePlayer: () => void;
-        defineCard: () => void;
-        defineSkill: () => void;
+    interface Extension {
+        components?: (ui: UI) => (typeof Component)[];
+        css?: (css: Dict<CSSDict>) => Dict<CSSDict>;
+        game?: () => void;
+        heros?: () => void;
+        cards?: () => void;
+        skills?: () => void;
     }
-
-    interface ExtensionPermission {
-        'worker': 'definePlayer' | 'defineCard' | 'defineSkill';
-        'client': 'ui' | 'defineComponent' | 'extendComponent';
-        'ui': 'extendCSS';
-        'worker_root': 'defineGame';
-        'client_root': 'extendSystemComponent';
-        'ui_root': 'extendSystemCSS';
-    }
-
-    type Extension<permission extends keyof ExtensionPermission> = (api: Pick<ExtensionAPI, ExtensionPermission[permission]>) => void;
 }
