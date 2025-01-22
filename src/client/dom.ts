@@ -9,10 +9,10 @@ export function createFC(target: ComponentType): FC {
 
 /**
  * Renders a component to an HTML element.
- * @param target - Component object to render.
+ * @param cmp - Component object to render.
  */
-function render(target: Component): HTMLElement {
-    const tag = toHyphen(target.constructor.name);
+function render(cmp: Component): HTMLElement {
+    const tag = toHyphen(cmp.constructor.name);
     if (!customElements.get(tag)) {
         customElements.define(tag, class extends HTMLElement {});
     }
@@ -21,9 +21,9 @@ function render(target: Component): HTMLElement {
 
 /**
  * Creates a root element for the given component and appends it to the document body.
- * @param target - Component class to create a root element for.
+ * @param cmp - Component class to create a root element for.
  */
-export async function createRoot(target: Component) {
+export async function createRoot(cmp: Component) {
     if (document.readyState === 'loading') {
         await new Promise(resolve => document.addEventListener('DOMContentLoaded', resolve));
     }
@@ -41,5 +41,5 @@ export async function createRoot(target: Component) {
 
     // // disable context menu
     // document.oncontextmenu = () => false;
-    document.body.appendChild(render(target));
+    document.body.appendChild(render(cmp));
 }
