@@ -9,7 +9,7 @@ const imports = [
 ];
 
 for (const src of await fs.readdir('src/components')) {
-    imports.push(`import '../components/${src}';`);
+    imports.push(`import '../components/${src.slice(0, -3)}';`);
 }
 
 imports.push(`createRoot(ui.app);`);

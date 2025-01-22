@@ -3,5 +3,5 @@
  */
 import {ui} from './ui';
 import {createRoot} from './dom';
-import '../components/app.ts';
+import '../components/app';
 createRoot(ui.app);

@@ -6,3 +6,4 @@ node_modules/
 .sourcemaps
 /dist/
 /ios/
+/build/

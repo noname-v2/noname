@@ -7,6 +7,10 @@ export function createFC(target: ComponentType): FC {
     };
 }
 
+/**
+ * Renders a component to an HTML element.
+ * @param target - Component object to render.
+ */
 function render(target: Component): HTMLElement {
     const tag = toHyphen(target.constructor.name);
     if (!customElements.get(tag)) {
@@ -15,18 +19,14 @@ function render(target: Component): HTMLElement {
     return document.createElement(tag);
 }
 
-export function createRoot(target: Component): HTMLElement {
-    const root = render(target);
-    document.body.appendChild(root);
-    return root;
-}
-
-/** Resolved when document is ready. */
-export const ready = new Promise<void>(async resolve => {
+/**
+ * Creates a root element for the given component and appends it to the document body.
+ * @param target - Component class to create a root element for.
+ */
+export async function createRoot(target: Component) {
     if (document.readyState === 'loading') {
         await new Promise(resolve => document.addEventListener('DOMContentLoaded', resolve));
     }
-
     // // add bindings for drag operations
     // document.body.addEventListener('touchmove', e => pointerMove(e.touches[0], true), {passive: true});
     // document.body.addEventListener('touchend', () => pointerEnd(true), {passive: true});
@@ -41,6 +41,5 @@ export const ready = new Promise<void>(async resolve => {
 
     // // disable context menu
     // document.oncontextmenu = () => false;
-
-    resolve();
-});
+    document.body.appendChild(render(target));
+}
