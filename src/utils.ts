@@ -49,12 +49,17 @@ export function unCapitalize(str: string): Uncapitalize<string> {
  * @param str The string to convert.
  */
 export function toSnake(str: string): Uncapitalize<string> {
-    return str.replace(/[A-Z]/g, c => `_${c.toLowerCase()}`) as Uncapitalize<string>;
+    return str.replace(/[A-Z]/g, c => `_${c.toLowerCase()}`).replaceAll('-', '_') as Uncapitalize<string>;
+}
+
+/** Convert to hyphens case */
+export function toHyphen(str: string): Uncapitalize<string> {
+    return toSnake(str).replaceAll('_', '-') as Uncapitalize<string>;
 }
 
 /** Convert a snake string to a case string.
  * @param str The string to convert.
  */
 export function toCase(str: string) {
-    return str.replace(/_./g, c => c.charAt(1).toUpperCase());
+    return str.replaceAll('-', '_').replace(/_./g, c => c.charAt(1).toUpperCase());
 }
