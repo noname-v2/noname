@@ -1,4 +1,4 @@
-import type { defineComponent, extendComponent, extendRootComponent } from './client/ui';
+import type { defineComponents } from './client/ui';
 import type { Component } from './client/component';
 import type { extendCSS, extendRootCSS } from './ui/css';
 
@@ -81,7 +81,7 @@ declare global {
 
     /** Type for a extension */
     interface Extension {
-        components?: (ui: UI) => (typeof Component)[];
+        components?: Parameters<typeof defineComponents>[0];
         css?: (css: Dict<CSSDict>) => Dict<CSSDict>;
         game?: () => void;
         heros?: () => void;

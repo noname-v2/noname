@@ -13,7 +13,7 @@ const components = {} as UI;
  * @param target Component class.
  * @param mode Permission of the component defition.
  */
-export function defineComponent(target: typeof Component, mode: ComponentMode) {
+function defineComponent(target: typeof Component, mode: ComponentMode) {
     if (!isCapatalized(target.name)) {
         throw new Error(`Component name ${target.name} must be capatalized`);
     }
@@ -42,9 +42,9 @@ export function defineComponent(target: typeof Component, mode: ComponentMode) {
     }
 }
 
-export function defineComponents(components: Dict<typeof Component>, mode: ComponentMode) {
-    for (const key in components) {
-        defineComponent(components[key], mode);
+export function defineComponents(creator: (ui: UI) => (typeof Component)[], mode: ComponentMode) {
+    for (const target of creator(ui)) {
+        defineComponent(target, mode);
     }
 }
 
