@@ -45,21 +45,23 @@ export function unCapitalize(str: string): Uncapitalize<string> {
     return (str.charAt(0).toLowerCase() + str.slice(1)) as Uncapitalize<string>;
 }
 
-/** Convert a pascal string to a case string.
+/** Convert a camel or pascal string to a Kebab case.
  * @param str The string to convert.
  */
-export function toSnake(str: string): Uncapitalize<string> {
-    return str.replace(/[A-Z]/g, c => `_${c.toLowerCase()}`).replaceAll('-', '_') as Uncapitalize<string>;
+export function toKebab(str: string): Uncapitalize<string> {
+    return unCapitalize(str).replace(/[A-Z]/g, c => `-${c.toLowerCase()}`) as Uncapitalize<string>;
 }
 
-/** Convert to hyphens case */
-export function toHyphen(str: string): Uncapitalize<string> {
-    return toSnake(str).replaceAll('_', '-') as Uncapitalize<string>;
+/** Convert a snake string to a Pascal string.
+ * @param str The string to convert.
+ */
+export function toPascal(str: string): Capitalize<string> {
+    return capitalize(toCase(str));
 }
 
-/** Convert a snake string to a case string.
+/** Convert a snake string to a Camel or Pascal string.
  * @param str The string to convert.
  */
 export function toCase(str: string) {
-    return str.replaceAll('-', '_').replace(/_./g, c => c.charAt(1).toUpperCase());
+    return str.replace(/-./g, c => c.charAt(1).toUpperCase());
 }

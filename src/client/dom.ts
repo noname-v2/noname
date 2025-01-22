@@ -1,9 +1,10 @@
-import { toHyphen } from "../utils";
+import { toKebab } from "../utils";
 
 export function createFC(target: ComponentType): FC {
     return (..._: any[]) => {
         const cmp = new target({} as any);
         cmp.mount();
+        return cmp;
     };
 }
 
@@ -12,7 +13,7 @@ export function createFC(target: ComponentType): FC {
  * @param cmp - Component object to render.
  */
 function render(cmp: Component): HTMLElement {
-    const tag = toHyphen(cmp.constructor.name);
+    const tag = 'nn-' + toKebab(cmp.constructor.name);
     if (!customElements.get(tag)) {
         customElements.define(tag, class extends HTMLElement {});
     }

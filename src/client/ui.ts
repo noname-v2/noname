@@ -1,4 +1,4 @@
-import { isCapatalized, toSnake } from "../utils";
+import { isCapatalized, unCapitalize } from "../utils";
 import { Component } from "./component";
 import { createFC } from "./dom";
 
@@ -7,6 +7,14 @@ const systemComponents = new Set<Capitalize<string>>();
 
 /** Component constructors and function creators. */
 const components = {} as UI;
+
+/** Type for modes to define a component. */
+enum ComponentMode {
+    SYSTEM, // define component
+    ROOT, // can extend any component
+    GAME, // can extend any game (non-system) component
+    DEFAULT // cannot extend any component
+}
 
 /**
  * Define a component.
@@ -27,7 +35,7 @@ function defineComponent(target: typeof Component, mode: ComponentMode) {
             (mode === ComponentMode.GAME && !systemComponents.has(target.name))) &&
             target.prototype instanceof components[target.name]) { 
             components[target.name] = target;
-            components[toSnake(target.name)] = createFC(target);
+            components[unCapitalize(target.name)] = createFC(target);
         }
         else {
             throw new Error(`Component ${target.name} already defined`);
@@ -38,7 +46,7 @@ function defineComponent(target: typeof Component, mode: ComponentMode) {
             systemComponents.add(target.name);
         }
         components[target.name] = target;
-        components[toSnake(target.name)] = createFC(target);
+        components[unCapitalize(target.name)] = createFC(target);
     }
 }
 
@@ -54,3 +62,5 @@ export const ui = new Proxy(components, {
         return target[prop];
     }
 });
+
+defineComponent(Component, ComponentMode.SYSTEM);

@@ -71,14 +71,6 @@ declare global {
         [key: Uncapitalize<string>]: FC;
     }
 
-    /** Type for modes to define a component. */
-    enum ComponentMode {
-        SYSTEM, // define component
-        ROOT, // can extend any component
-        GAME, // can extend any game (non-system) component
-        DEFAULT // cannot extend any component
-    }
-
     /** Type for a extension */
     interface Extension {
         components?: Parameters<typeof defineComponents>[0];

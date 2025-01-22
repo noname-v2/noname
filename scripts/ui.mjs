@@ -12,6 +12,6 @@ for (const src of await fs.readdir('src/components')) {
     imports.push(`import '../components/${src.slice(0, -3)}';`);
 }
 
-imports.push(`createRoot(ui.app);`);
+imports.push(`createRoot(ui.app());`);
 
 await fs.writeFile('src/client/index.ts', imports.join('\n'));

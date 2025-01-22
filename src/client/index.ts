@@ -4,4 +4,4 @@
 import {ui} from './ui';
 import {createRoot} from './dom';
 import '../components/app';
-createRoot(ui.app);
+createRoot(ui.app());
