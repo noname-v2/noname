@@ -72,12 +72,9 @@ declare global {
     }
 
     /** Type for a extension */
-    interface Extension {
-        components?: Parameters<typeof defineComponents>[0];
-        css?: (css: Dict<CSSDict>) => Dict<CSSDict>;
-        game?: () => void;
-        heros?: () => void;
-        cards?: () => void;
-        skills?: () => void;
-    }
+    type ComponentExtension = (ui: UI) => ComponentType[];
+    type CSSExtension = (css: Dict<CSSDict>) => Dict<CSSDict>;
+    type GameExtension = () => void;
+    type HeroExtension = () => void;
+    type CardExtension = () => void;
 }

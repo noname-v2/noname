@@ -8,20 +8,12 @@ const systemComponents = new Set<Capitalize<string>>();
 /** Component constructors and function creators. */
 const components = {} as UI;
 
-/** Type for modes to define a component. */
-enum ComponentMode {
-    SYSTEM, // define component
-    ROOT, // can extend any component
-    GAME, // can extend any game (non-system) component
-    DEFAULT // cannot extend any component
-}
-
 /**
  * Define a component.
  * @param target Component class.
  * @param mode Permission of the component defition.
  */
-function defineComponent(target: typeof Component, mode: ComponentMode) {
+function defineComponent(target: typeof Component) {
     if (!isCapatalized(target.name)) {
         throw new Error(`Component name ${target.name} must be capatalized`);
     }
@@ -31,9 +23,7 @@ function defineComponent(target: typeof Component, mode: ComponentMode) {
         // 1) mode is ROOT, or
         // 2) mode is GAME and target is not a system component
         // and component is subclass of the existing component
-        if ((mode === ComponentMode.ROOT ||
-            (mode === ComponentMode.GAME && !systemComponents.has(target.name))) &&
-            target.prototype instanceof components[target.name]) { 
+        if (target.prototype instanceof components[target.name]) { 
             components[target.name] = target;
             components[unCapitalize(target.name)] = createFC(target);
         }
@@ -42,17 +32,21 @@ function defineComponent(target: typeof Component, mode: ComponentMode) {
         }
     }
     else {
-        if (mode === ComponentMode.SYSTEM) {
-            systemComponents.add(target.name);
-        }
         components[target.name] = target;
         components[unCapitalize(target.name)] = createFC(target);
     }
 }
 
-export function defineComponents(creator: (ui: UI) => (typeof Component)[], mode: ComponentMode) {
+/**
+ * Define a component from components folder or an extension.
+ * @param creator Component creator function that returns an array of component classes.
+ */
+export function defineComponents(creator: ComponentExtension, root: boolean) {
     for (const target of creator(ui)) {
-        defineComponent(target, mode);
+        defineComponent(target);
+        if (root) {
+            systemComponents.add(target.name as Capitalize<string>);
+        }
     }
 }
 
@@ -63,4 +57,4 @@ export const ui = new Proxy(components, {
     }
 });
 
-defineComponent(Component, ComponentMode.SYSTEM);
+defineComponent(Component);

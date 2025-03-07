@@ -26,4 +26,4 @@ defineComponents(ui => [
             return ui[this.state('page') ?? 'home'] ?? null;
         }
     }
-], 0);
+], true);
