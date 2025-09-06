@@ -1,4 +1,4 @@
-export class Component {
+export default class Component {
     #state: Map<string, any> = new Map();
 
     // component that created this component (from constructor or render())

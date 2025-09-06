@@ -1,19 +1,21 @@
-import { defineComponents } from "../client/ui";
+import { defineComponent } from "../client/ui";
 
-defineComponents(ui => [
+defineComponent('Background', ui =>
     /**
-     * Background component.
-     */
-    class Background extends ui.Component {
+    * Background component.
+    */
+    class extends ui.Component {
         render() {
-            return ui.div({style: {position: 'absolute', width: '100%', height: '100%', backgroundColor: 'black'}});
+            return ui.div({ style: { position: 'absolute', width: '100%', height: '100%', backgroundColor: 'black' } });
         }
-    },
+    }
+);
 
+defineComponent('App', ui =>
     /**
      * App component.
      */
-    class App extends ui.Component {
+    class extends ui.Component {
         render() {
             ui.zoom(
                 ui.background(),
@@ -26,4 +28,4 @@ defineComponents(ui => [
             return ui[this.state('page') ?? 'home'] ?? null;
         }
     }
-], true);
+);

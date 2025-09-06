@@ -1,5 +1,4 @@
-import type { defineComponents } from './client/ui';
-import type { Component } from './client/component';
+import type Component from './client/component';
 import type { extendCSS, extendRootCSS } from './ui/css';
 
 declare global {
@@ -72,7 +71,7 @@ declare global {
     }
 
     /** Type for a extension */
-    type ComponentExtension = (ui: UI) => ComponentType[];
+    type ComponentExtension = (ui: UI) => ComponentType;
     type CSSExtension = (css: Dict<CSSDict>) => Dict<CSSDict>;
     type GameExtension = () => void;
     type HeroExtension = () => void;
