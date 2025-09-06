@@ -10,17 +10,21 @@
   ],
   "scripts": {
     "clean": "rm -rf build && rm -rf dist",
-    "build": "node scripts/ui.mjs && npx tsc && node scripts/rollup.mjs",
+    "build": "sh scripts/build.sh",
     "clean-build": "npm run clean && npm run build",
     "serve": "npx http-server .",
     "cb": "npm run clean-build"
   },
   "devDependencies": {
+    "@capacitor/cli": "^7.4.3",
     "electron": "^33.3.1",
     "http-server": "^14.1.1",
     "rollup": "^4.31.0",
     "typescript": "^5.7.3"
   },
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "@capacitor/core": "^7.4.3"
+  }
 }

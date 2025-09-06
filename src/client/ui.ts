@@ -2,11 +2,11 @@ import { isCapatalized, unCapitalize } from "../utils";
 import { Component } from "./component";
 import { createFC } from "./dom";
 
-/** Components defined before any extension is loaded. */
-const systemComponents = new Set<Capitalize<string>>();
+/** Built-in components. */
+const systemComponents = new Set<Capitalize<string>>(['Component']);
 
-/** Component constructors and function creators. */
-const components = {} as UI;
+/** Components define by the extensions for current game mode. */
+const components = { Component } as UI;
 
 /**
  * Define a component.
@@ -41,10 +41,10 @@ function defineComponent(target: typeof Component) {
  * Define a component from components folder or an extension.
  * @param creator Component creator function that returns an array of component classes.
  */
-export function defineComponents(creator: ComponentExtension, root: boolean) {
+export function defineComponents(creator: ComponentExtension, system: boolean) {
     for (const target of creator(ui)) {
         defineComponent(target);
-        if (root) {
+        if (system) {
             systemComponents.add(target.name as Capitalize<string>);
         }
     }
@@ -56,5 +56,3 @@ export const ui = new Proxy(components, {
         return target[prop];
     }
 });
-
-defineComponent(Component);
