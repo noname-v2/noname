@@ -65,3 +65,10 @@ export function toPascal(str: string): Capitalize<string> {
 export function toCase(str: string) {
     return str.replace(/-./g, c => c.charAt(1).toUpperCase());
 }
+
+/** Check if an object is a plain object.
+ * @param obj The object to check.
+ */
+export function isDict(obj: any): obj is Dict {
+    return !!obj && typeof obj === 'object' && Object.getPrototypeOf(obj) === Object.prototype;
+}

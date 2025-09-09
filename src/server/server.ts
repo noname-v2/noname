@@ -1,1 +1,5 @@
-console.log(2);
+export default class Server {
+   start() {
+       // Start the server
+   }
+}

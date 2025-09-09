@@ -1,5 +1,7 @@
-import type Component from './client/component';
-import type { extendCSS, extendRootCSS } from './ui/css';
+import type { _Component, _ComponentType } from './server/component';
+import type { _Stage, _StageType } from './server/stage';
+import type { _Entity, _EntityType } from './server/entity';
+import type { State } from './server/state';
 
 declare global {
     /** Plain object. */
@@ -58,22 +60,38 @@ declare global {
     type Region = {x: [number, number], y: [number, number]};
 
     /** Type for a component. */
-    type Component = Component;
-    type ComponentType = typeof Component;
+    type Component = _Component;
+    type ComponentType = _ComponentType;
+
+    type Stage = _Stage;
+    type StageType = _StageType;
+
+    type Entity = _Entity;
+    type EntityType = _EntityType;
 
     /** Type for a function that returns component instance. */
-    type FC = (...args: (Component | string | Dict)[]) => Component;
+    type ComponentCreator = (...args: (Component | Dict)[]) => Component;
 
-    /** Type for API for UI. */
+    /** Type for APIs. */
     interface UI {
-        [key: Capitalize<string>]: typeof Component;
-        [key: Uncapitalize<string>]: FC;
+        [key: Capitalize<string>]: ComponentType;
+        [key: Uncapitalize<string>]: ComponentCreator;
+    }
+
+    interface Stages {
+        [key: Capitalize<string>]: StageType;
+    }
+
+    interface Entities {
+        [key: Capitalize<string>]: EntityType;
     }
 
     /** Type for a extension */
-    type ComponentExtension = (ui: UI) => ComponentType;
-    type CSSExtension = (css: Dict<CSSDict>) => Dict<CSSDict>;
-    type GameExtension = () => void;
-    type HeroExtension = () => void;
-    type CardExtension = () => void;
+    interface ExtensionObject {
+        ui?: {[key: Capitalize<string>]: ComponentType};
+        stages?: {[key: Capitalize<string>]: StageType};
+        entities?: {[key: Capitalize<string>]: EntityType};
+    }
+
+    type Extension = (ui: UI, stages: Stages, entities: Entities) => ExtensionObject;
 }

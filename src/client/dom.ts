@@ -1,12 +1,6 @@
 import { toKebab } from "../utils";
 
-export function createFC(target: ComponentType): FC {
-    return (..._: any[]) => {
-        const cmp = new target({} as any);
-        cmp.mount();
-        return cmp;
-    };
-}
+
 
 /**
  * Renders a component to an HTML element.

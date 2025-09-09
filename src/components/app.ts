@@ -1,31 +1,35 @@
-import { defineComponent } from "../client/ui";
-
-defineComponent('Background', ui =>
-    /**
-    * Background component.
-    */
-    class extends ui.Component {
-        render() {
-            return ui.div({ style: { position: 'absolute', width: '100%', height: '100%', backgroundColor: 'black' } });
+export default (ui, state) => ({
+    ui: {
+        /**
+         * App component.
+         */
+        App: class extends ui.Component {
+            render() {
+                ui.zoom(
+                    ui.background(),
+                    ui.main(this.children()),
+                    ui.foreground()
+                    // from here: automatically add hook for stage change
+                    // by capturing which stage properties are accessed during render()
+                );
+            }
         }
     }
-);
+}) as Extension;
 
-defineComponent('App', ui =>
-    /**
-     * App component.
-     */
-    class extends ui.Component {
-        render() {
-            ui.zoom(
-                ui.background(),
-                this.main(),
-                ui.foreground()
-            );
-        }
+// import { defineComponent } from "../server/ui";
 
-        main() {
-            return ui[this.state('page') ?? 'home'] ?? null;
-        }
-    }
-);
+// // defineComponent('Background', ui =>
+// //     /**
+// //     * Background component.
+// //     */
+// //     class extends ui.Component {
+// //         render() {
+// //             return ui.div({ style: { position: 'absolute', width: '100%', height: '100%', backgroundColor: 'black' } });
+// //         }
+// //     }
+// );
+
+// defineComponent('App', ui =>
+    
+// );
