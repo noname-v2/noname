@@ -6,29 +6,31 @@ const parent = new Map<Component, Component>();
 // map from component to child components
 const children = new Map<Component, Component[]>();
 
-// newly created components without parent
-const unparented = new Set<Component>();
+// newly created components to be processed
+const incoming = new Set<Component>();
+
+// components passed by wrapComponent(), to be processed by the render() method of a certain component
+const appended = new Map<Component, Component[]>();
 
 function wrapComponent(target: ComponentType): ComponentCreator {
     return (...args) => {
         const cmp = new target();
-        unparented.add(cmp);
+        incoming.add(cmp);
 
-        // if (parent) {
-        //     parents.set(cmp.id, parent.id);
-        //     if (!children.has(parent.id)) {
-        //         children.set(parent.id, new Set([cmp.id]));
-        //     }
-        //     else {
-        //         children.get(parent.id)!.add(cmp.id);
-        //     }
-        // }
+        for (const arg of args) {
+            if (arg instanceof Component) {
+                if (!incoming.has(arg)) {
+                    throw new Error("Unexpected child component.");
+                }
+                incoming.delete(cmp);
+                if (!appended.has(cmp)) {
+                    appended.set(cmp, []);
+                }
+                appended.get(cmp)!.push(arg);
+            }
+        }
 
-        // renderStack.push(cmp);
-        // cmp.render();
-        // if (cmp != renderStack.pop()) {
-        //     throw new Error("Render stack mismatch");
-        // }
+        return cmp;
     };
 }
 
@@ -124,10 +126,21 @@ class Component {
         return false;
     }
 
+    /* Re-distribute child components passed by creator during rendering.
+     * If a child is not appended to another other component after render() is complete,
+     * it will be appended as child like other incoming components created by render().
+    */
     children() {
-        return [];
+        for (const child of appended.get(this) || []) {
+            incoming.add(child);
+        }
+        appended.delete(this);
     }
 
+    /**
+     * Render the component.
+     * By default appends all child components passed from wrapComponent.
+     */
     render() {
         this.children();
     }
@@ -148,7 +161,7 @@ const dict = { Component } as UI;
  * @param target Component class.
  * @param mode Permission of the component defition.
  */
-export function defineComponent(name: string, target: typeof Component) {
+export function registerComponent(name: string, target: typeof Component) {
     if (!isCapatalized(name)) {
         throw new Error(`Component name ${name} must be capatalized`);
     }

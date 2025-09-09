@@ -23,7 +23,7 @@ const dict = { Stage } as Stages;
  * @param target Stage class.
  * @param mode Permission of the stage defition.
  */
-export function defineStage(name: string, target: typeof Stage) {
+export function registerStage(name: string, target: typeof Stage) {
     if (!isCapatalized(name)) {
         throw new Error(`Stage name ${name} must be capatalized`);
     }

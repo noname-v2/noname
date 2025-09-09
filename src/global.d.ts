@@ -1,11 +1,12 @@
 import type { _Component, _ComponentType } from './server/component';
 import type { _Stage, _StageType } from './server/stage';
-import type { _Entity, _EntityType } from './server/entity';
+import type { _Entity, _EntityType, _EntityData } from './server/entity';
 import type { State } from './server/state';
 
 declare global {
     /** Plain object. */
-    type Dict<T=any> = {[key: string]: T};
+    type Plain = number | string | boolean | null | Plain[] | { [key: string]: Plain };
+    type Dict<T=Plain> = {[key: string]: T};
 
     /** CSS values (number is converted to px, array is joined with a space). */
     type CSSValue = number | string | (string | number)[];
@@ -68,6 +69,7 @@ declare global {
 
     type Entity = _Entity;
     type EntityType = _EntityType;
+    type EntityData = _EntityData;
 
     /** Type for a function that returns component instance. */
     type ComponentCreator = (...args: (Component | Dict)[]) => Component;
@@ -93,5 +95,5 @@ declare global {
         entities?: {[key: Capitalize<string>]: EntityType};
     }
 
-    type Extension = (ui: UI, stages: Stages, entities: Entities) => ExtensionObject;
+    type Extension = ({ ui: UI, stages: Stages, entities: Entities }) => ExtensionObject;
 }

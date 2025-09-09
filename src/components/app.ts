@@ -1,4 +1,4 @@
-export default (ui, state) => ({
+export default (ui, stages, entities) => ({
     ui: {
         /**
          * App component.
@@ -17,9 +17,9 @@ export default (ui, state) => ({
     }
 }) as Extension;
 
-// import { defineComponent } from "../server/ui";
+// import { registerComponent } from "../server/ui";
 
-// // defineComponent('Background', ui =>
+// // registerComponent('Background', ui =>
 // //     /**
 // //     * Background component.
 // //     */
@@ -30,6 +30,6 @@ export default (ui, state) => ({
 // //     }
 // );
 
-// defineComponent('App', ui =>
+// registerComponent('App', ui =>
     
 // );

@@ -1,15 +1,31 @@
 import { isCapatalized } from "../utils";
 
-// from here: global game object that stores current game status (all data except for stages)
+// entity data type
+type EntityData = Plain | Entity | EntityData[] | { [key: string]: EntityData };
+
+// unique entity ID
+let entityCount = 0;
+
 class Entity {
-    createProxy() {
-        return new Proxy(this, {
+    #id = entityCount++;
+
+    #data: Dict<EntityData> = {};
+
+    get id() {
+        return this.#id;
+    }
+
+    createProxy(readOnly: boolean = false): EntityData {
+        return new Proxy(this.#data, {
             get(target, prop, receiver) {
                 // intercept property access
                 return Reflect.get(target, prop, receiver);
             },
             set(target, prop, value, receiver) {
                 // intercept property assignment
+                if (readOnly) {
+                    throw new Error("Cannot modify read-only proxy");
+                }
                 return Reflect.set(target, prop, value, receiver);
             }
         });
@@ -18,6 +34,7 @@ class Entity {
 
 export type _Entity = Entity;
 export type _EntityType = typeof Entity;
+export type _EntityData = EntityData;
 
 /** Stages defined in the current scope. */
 const dict = { Entity } as Entities;
@@ -27,7 +44,7 @@ const dict = { Entity } as Entities;
  * @param target Stage class.
  * @param mode Permission of the stage defition.
  */
-export function defineEntity(name: string, target: EntityType) {
+export function registerEntity(name: string, target: EntityType) {
     if (!isCapatalized(name)) {
         throw new Error(`Entity name ${name} must be capatalized`);
     }
@@ -46,9 +63,13 @@ export function defineEntity(name: string, target: EntityType) {
     }
 }
 
-/** Read-only UI getter for extensions. */
+// read-only Entity class getter for extensions
 export const entities = new Proxy(dict, {
     get: function (target, prop: Capitalize<string>) {
         return target[prop];
     }
 });
+
+// global state object
+const stateEntity = new Entity();
+export const state = stateEntity.createProxy();
