@@ -1,6 +1,6 @@
-import stages from '../stages/game/index';
-import components from '../components/game/index';
-import entities from '../entities/game/index';
+import stages from '../build/stages_game';
+import components from '../build/components_game';
+import entities from '../build/entities_game';
 import importExtension from './extension';
 
 stages.forEach(ext => importExtension(ext));

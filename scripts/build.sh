@@ -1,6 +1,8 @@
 #!/bin/sh
 
 # Generate index for components, stages and entities
+rm -rf src/build
+mkdir src/build
 node scripts/index.mjs
 
 # TypeScript compilation

@@ -9,7 +9,7 @@
     "mobile"
   ],
   "scripts": {
-    "clean": "rm -rf build && rm -rf dist",
+    "clean": "rm -rf src/build && rm -rf build && rm -rf dist",
     "build": "sh scripts/build.sh",
     "clean-build": "npm run clean && npm run build",
     "serve": "npx http-server .",

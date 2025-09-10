@@ -23,20 +23,20 @@ for (const lib of ['components', 'stages', 'entities']) {
         for (const src of await fs.readdir(`src/${lib}`)) {
             if (src.endsWith('.ts')) {
                 const name = src.slice(0, -3);
-                imports.push(`import ${name} from '../${name}';`);
+                imports.push(`import ${name} from '../${lib}/${name}';`);
                 index.push(name);
             }
         }
 
         for (const src of await fs.readdir(`src/${lib}/${section}`)) {
-            if (src.endsWith('.ts') && src !== 'index.ts') {
+            if (src.endsWith('.ts')) {
                 const name = src.slice(0, -3);
-                imports.push(`import ${name} from './${name}';`);
+                imports.push(`import ${name} from '../${lib}/${section}/${name}';`);
                 index.push(name);
             }
         }
 
         imports.push(`export default [${index.join(', ')}];`);
-        await fs.writeFile(`src/${lib}/${section}/index.ts`, imports.join('\n'));
+        await fs.writeFile(`src/build/${lib}_${section}.ts`, imports.join('\n'));
     }
 }
