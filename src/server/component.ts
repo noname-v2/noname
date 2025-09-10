@@ -1,19 +1,21 @@
 import { isDict } from "../utils";
 
-// map from component to its parent
+// Map from component to its parent.
 const parent = new Map<Component, Component>();
 
-// map from component to child components
+// Map from component to child components.
 const children = new Map<Component, Component[]>();
 
-// newly created components to be processed
+// Newly created components to be processed.
 const incoming = new Set<Component>();
 
-/* child components from the args of ComponentCreator(), to be processed by the render() method of component A
- * by calling A.children. It can be later appended to either a child component of A or
- * A itself depending on where A.children() is called.
- */
+// Child components from the args of ComponentCreator(), to be processed by the render() method of component A
+// by calling A.children. It can be later appended to either a child component of A or
+// A itself depending on where A.children() is called.
 const appended = new Map<Component, Component[]>();
+
+// Components visible only to specific clients.
+const exclusive = new Map<Component, Set<string>>();
 
 export function render(cmp: Component) {
     if (incoming.size) {
@@ -22,7 +24,7 @@ export function render(cmp: Component) {
 
     cmp.render();
 
-    // add all newly created components to yet appended to cmp
+    // Assign all incoming components without parents as the immediate child of cmp.
     if (!children.has(cmp)) {
         children.set(cmp, []);
     }
@@ -38,12 +40,12 @@ export function render(cmp: Component) {
 
 export function wrapComponent(target: ComponentType): ComponentCreator {
     return (...args) => {
-        /* When a new component is created, it is either passed as a parameter of ComponentCreator,
-         * or appended to the current rendering component. Putting it to incoming and decide afterwards.
-         */
+        // When a new component is created, it is either passed as a parameter of ComponentCreator,
+        // or appended to the current rendering component. Putting it to incoming and decide afterwards.
         const cmp = new target();
         incoming.add(cmp);
 
+        // Assign an incoming component as one of cmp.children().
         const dispatch = (child: Component) => {
             if (!incoming.has(child)) {
                 throw new Error("Unexpected child component.");
@@ -57,17 +59,34 @@ export function wrapComponent(target: ComponentType): ComponentCreator {
 
         for (const arg of args) {
             if (arg instanceof Component) {
+                // Put Component to cmp.children().
                 dispatch(arg);
             }
             else if (Array.isArray(arg)) {
                 for (const item of arg) {
                     if (item instanceof Component) {
+                        // Put Component[] (usually generated from parent.children()) to cmp.children()
                         dispatch(item);
+                    }
+                    else if (typeof item === "string") {
+                        // List of client IDs cmp is visible to
+                        if (!exclusive.has(cmp)) {
+                            exclusive.set(cmp, new Set());
+                        }
+                        exclusive.get(cmp)!.add(item);
                     }
                 }
             }
             else if (isDict(arg)) {
+                // Properties assigned from parent components
                 cmp.props = arg;
+            }
+            else if (typeof arg === "string") {
+                // Client ID cmp is visible to
+                if (!exclusive.has(cmp)) {
+                    exclusive.set(cmp, new Set());
+                }
+                exclusive.get(cmp)!.add(arg);
             }
         }
 
@@ -76,10 +95,10 @@ export function wrapComponent(target: ComponentType): ComponentCreator {
 }
 
 export default class Component {
-    // properties passed from parent renderer
+    // Properties passed from parent renderer
     props: Dict | null = null;
 
-    // whether the component is a native DOM element or prefixed with `nn-`
+    // Whether the component is a native DOM element or prefixed with `nn-`
     static get native() {
         return false;
     }
@@ -183,15 +202,12 @@ export default class Component {
         return children;
     }
 
-    /**
-     * Render the component.
-     * By default appends all child components passed from wrapComponent.
-     */
+    // Default rendering method, which appends all child components passed as the arguments of ComponentCreator.
     render() {
         this.children();
     }
 
     async init() {
-        // called when component is initialized before mounting
+        // Called when component is initialized before mounting
     }
 };

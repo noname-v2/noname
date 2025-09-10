@@ -72,7 +72,7 @@ declare global {
     type EntityData = Plain | Entity | EntityData[] | { [key: string]: EntityData };
 
     /** Type for a function that returns component instance. */
-    type ComponentCreator = (...args: (Component | Component[] | Dict)[]) => Component;
+    type ComponentCreator = (...args: (string | string[] | Component | Component[] | Dict)[]) => Component;
 
     /** Type for APIs. */
     interface UI {
