@@ -1,4 +1,4 @@
-import { isCapatalized, unCapitalize } from "../utils";
+import { isDict } from "../utils";
 
 // map from component to its parent
 const parent = new Map<Component, Component>();
@@ -9,24 +9,65 @@ const children = new Map<Component, Component[]>();
 // newly created components to be processed
 const incoming = new Set<Component>();
 
-// components passed by wrapComponent(), to be processed by the render() method of a certain component
+/* child components from the args of ComponentCreator(), to be processed by the render() method of component A
+ * by calling A.children. It can be later appended to either a child component of A or
+ * A itself depending on where A.children() is called.
+ */
 const appended = new Map<Component, Component[]>();
 
-function wrapComponent(target: ComponentType): ComponentCreator {
+export function render(cmp: Component) {
+    if (incoming.size) {
+        throw new Error("Another component is being rendered.");
+    }
+
+    cmp.render();
+
+    // add all newly created components to yet appended to cmp
+    if (!children.has(cmp)) {
+        children.set(cmp, []);
+    }
+    for (const child of incoming) {
+        if (parent.has(child)) {
+            throw new Error("Child component is already attached to another parent.");
+        }
+        children.get(cmp)!.push(child);
+        parent.set(child, cmp);
+    }
+    incoming.clear();
+}
+
+export function wrapComponent(target: ComponentType): ComponentCreator {
     return (...args) => {
+        /* When a new component is created, it is either passed as a parameter of ComponentCreator,
+         * or appended to the current rendering component. Putting it to incoming and decide afterwards.
+         */
         const cmp = new target();
         incoming.add(cmp);
 
+        const dispatch = (child: Component) => {
+            if (!incoming.has(child)) {
+                throw new Error("Unexpected child component.");
+            }
+            incoming.delete(cmp);
+            if (!appended.has(cmp)) {
+                appended.set(cmp, []);
+            }
+            appended.get(cmp)!.push(child);
+        }
+
         for (const arg of args) {
             if (arg instanceof Component) {
-                if (!incoming.has(arg)) {
-                    throw new Error("Unexpected child component.");
+                dispatch(arg);
+            }
+            else if (Array.isArray(arg)) {
+                for (const item of arg) {
+                    if (item instanceof Component) {
+                        dispatch(item);
+                    }
                 }
-                incoming.delete(cmp);
-                if (!appended.has(cmp)) {
-                    appended.set(cmp, []);
-                }
-                appended.get(cmp)!.push(arg);
+            }
+            else if (isDict(arg)) {
+                cmp.props = arg;
             }
         }
 
@@ -34,7 +75,10 @@ function wrapComponent(target: ComponentType): ComponentCreator {
     };
 }
 
-class Component {
+export default class Component {
+    // properties passed from parent renderer
+    props: Dict | null = null;
+
     // whether the component is a native DOM element or prefixed with `nn-`
     static get native() {
         return false;
@@ -131,10 +175,12 @@ class Component {
      * it will be appended as child like other incoming components created by render().
     */
     children() {
-        for (const child of appended.get(this) || []) {
+        const children = appended.get(this) || [];
+        for (const child of children) {
             incoming.add(child);
         }
         appended.delete(this);
+        return children;
     }
 
     /**
@@ -149,42 +195,3 @@ class Component {
         // called when component is initialized before mounting
     }
 };
-
-export type _Component = Component;
-export type _ComponentType = typeof Component;
-
-/** Components defined in the current scope. */
-const dict = { Component } as UI;
-
-/**
- * Define a component.
- * @param target Component class.
- * @param mode Permission of the component defition.
- */
-export function registerComponent(name: string, target: typeof Component) {
-    if (!isCapatalized(name)) {
-        throw new Error(`Component name ${name} must be capatalized`);
-    }
-
-    if (name in dict) {
-        // extend existing component if applicable
-        if (target.prototype instanceof dict[name]) {
-            dict[name] = target;
-            dict[unCapitalize(name)] = wrapComponent(target);
-        }
-        else {
-            throw new Error(`Component ${name} already defined`);
-        }
-    }
-    else {
-        dict[name] = target;
-        dict[unCapitalize(name)] = wrapComponent(target);
-    }
-}
-
-/** Read-only UI getter for extensions. */
-export const ui = new Proxy(dict, {
-    get: function (target, prop: Capitalize<string> | Uncapitalize<string>) {
-        return target[prop];
-    }
-});

@@ -1,7 +1,6 @@
-import type { _Component, _ComponentType } from './server/component';
-import type { _Stage, _StageType } from './server/stage';
-import type { _Entity, _EntityType, _EntityData } from './server/entity';
-import type { State } from './server/state';
+import type _Component from './server/component';
+import type _Stage from './server/stage';
+import type _Entity from './server/entity';
 
 declare global {
     /** Plain object. */
@@ -60,19 +59,20 @@ declare global {
     /** Type for an area */
     type Region = {x: [number, number], y: [number, number]};
 
-    /** Type for a component. */
+    // component type
     type Component = _Component;
-    type ComponentType = _ComponentType;
+    type ComponentType = typeof _Component;
 
     type Stage = _Stage;
-    type StageType = _StageType;
+    type StageType = typeof _Stage;
 
+    // entity type
     type Entity = _Entity;
-    type EntityType = _EntityType;
-    type EntityData = _EntityData;
+    type EntityType = typeof _Entity;
+    type EntityData = Plain | Entity | EntityData[] | { [key: string]: EntityData };
 
     /** Type for a function that returns component instance. */
-    type ComponentCreator = (...args: (Component | Dict)[]) => Component;
+    type ComponentCreator = (...args: (Component | Component[] | Dict)[]) => Component;
 
     /** Type for APIs. */
     interface UI {
@@ -88,12 +88,15 @@ declare global {
         [key: Capitalize<string>]: EntityType;
     }
 
-    /** Type for a extension */
-    interface ExtensionObject {
-        ui?: {[key: Capitalize<string>]: ComponentType};
-        stages?: {[key: Capitalize<string>]: StageType};
-        entities?: {[key: Capitalize<string>]: EntityType};
+    /** Type for a extension objects. */
+    interface ExtensionAPI {
+        ui: UI;
+        stages: Stages;
+        entities: Entities;
+        state: Dict<EntityData>;
     }
 
-    type Extension = ({ ui: UI, stages: Stages, entities: Entities }) => ExtensionObject;
+    type Extension = (api: ExtensionAPI) => {
+        [key: Capitalize<string>]: ComponentType | StageType | EntityType;
+    };
 }

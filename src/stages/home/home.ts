@@ -1,5 +1,5 @@
 const ext: Extension = ({ stages }) => ({
-    App: class extends stages.Stage {}
+    Home: class extends stages.Stage {}
 });
 
 export default ext;
