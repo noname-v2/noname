@@ -1,15 +1,5 @@
 import fs from 'node:fs/promises';
 
-async function getFiles(dir) {
-    const files = [];
-    for (const src of await fs.readdir(dir)) {
-        if (src.endsWith('.ts') && src !== 'index.ts') {
-            files.push(src.slice(0, -3));
-        }
-    }
-    return files;
-}
-
 for (const lib of ['components', 'stages', 'entities']) {
     for (const section of ['home', 'game']) {
         const imports = [

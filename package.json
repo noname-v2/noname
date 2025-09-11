@@ -12,13 +12,16 @@
     "clean": "rm -rf src/build && rm -rf build && rm -rf dist",
     "build": "sh scripts/build.sh",
     "clean-build": "npm run clean && npm run build",
+    "electron": "npx electron scripts/electron.js",
     "serve": "npx http-server .",
-    "cb": "npm run clean-build"
+    "cb": "npm run clean-build",
+    "debug": "sh scripts/build.sh electron && npm run electron"
   },
   "devDependencies": {
     "@capacitor/cli": "^7.4.3",
     "electron": "^33.3.1",
-    "http-server": "^14.1.1",
+    "express": "^5.1.0",
+    "portfinder": "^1.0.37",
     "rollup": "^4.31.0",
     "typescript": "^5.7.3"
   },

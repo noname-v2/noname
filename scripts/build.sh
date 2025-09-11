@@ -15,10 +15,17 @@ rollup build/server/game.js --file dist/game.js --format iife
 
 # Bundle to the working directories of each platform
 for src in build/platforms/*; do
+  # Skip if parameter is provided and doesn't match the current platform
+  if [ ! -z "$1" ] && [ "$(basename "$src")" != "$1" ]; then
+    continue
+  fi
   mkdir -p dist/$(basename "$src")
   rollup "$src"/index.js --file dist/$(basename "$src")/index.js --format iife
   find "$src" -type f -not -name "index.js" -exec cp {} dist/$(basename "$src")/ \;
+  rm -rf dist/$(basename "$src")/assets
+  ln -s ../../assets dist/$(basename "$src")/assets
   cp src/index.html dist/$(basename "$src")
+  cp src/app.webmanifest dist/$(basename "$src")
   cp dist/home.js dist/$(basename "$src")
   cp dist/game.js dist/$(basename "$src")
 done
