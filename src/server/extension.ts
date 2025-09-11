@@ -10,9 +10,9 @@ const state = stateEntity.createProxy();
 
 // object storing class definitions
 const lib = new Map<ComponentType | StageType | EntityType, UI | Stages | Entities>([
-    [Component, {}],
-    [Stage, {}],
-    [Entity, {}]
+    [Component, { Component }],
+    [Stage, { Stage }],
+    [Entity, { Entity }]
 ]);
 
 // read-only getters for Component classes and ComponentCreator functions
