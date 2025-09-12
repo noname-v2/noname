@@ -1,17 +1,32 @@
 import type _Component from './server/component';
 import type _Stage from './server/stage';
 import type _Entity from './server/entity';
+import type _Callbacks from './client/element';
 
 declare global {
-    /** Plain object. */
+    // Plain object
     type Plain = number | string | boolean | null | Plain[] | { [key: string]: Plain };
     type Dict<T=Plain> = {[key: string]: T};
 
-    /** CSS values (number is converted to px, array is joined with a space). */
-    type CSSValue = number | string | (string | number)[];
+    // CSS declaration
+    type CSSDict = Partial<CSSStyleDeclaration>;
 
-    /** Dict with a scss-like way to represent CSS. */
-    type CSSDict = { [key: string]: CSSValue | CSSDict }
+    // HTML element data (name compressed for minification)
+    interface ElementData {
+        s?: CSSDict; // style
+        d?: Dict; // dataset
+        n?: string; // className
+        p?: number | null; // parent id
+        c?: number[]; // children ids
+    }
+
+    // component data
+    interface ComponentData {
+        props?: Dict;
+        style?: CSSDict;
+        data?: Dict;
+        className?: string;
+    }
 
     // /** Properties assignable to FC. */
     // type FCProps = {
@@ -99,4 +114,6 @@ declare global {
     type Extension = (api: ExtensionAPI) => {
         [key: Capitalize<string>]: ComponentType | StageType | EntityType;
     };
+
+    type ElementExtension = (callbacks: Dict<_Callbacks>) => Dict<_Callbacks>;
 }

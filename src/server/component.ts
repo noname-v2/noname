@@ -1,10 +1,10 @@
 import { isDict } from "../utils";
 
 // Map from component to its parent.
-const parent = new Map<Component, Component>();
+const parent = new WeakMap<Component, Component>();
 
 // Map from component to child components.
-const children = new Map<Component, Component[]>();
+const children = new WeakMap<Component, Component[]>();
 
 // Newly created components to be processed.
 const incoming = new Set<Component>();
@@ -12,10 +12,13 @@ const incoming = new Set<Component>();
 // Child components from the args of ComponentCreator(), to be processed by the render() method of component A
 // by calling A.children. It can be later appended to either a child component of A or
 // A itself depending on where A.children() is called.
-const appended = new Map<Component, Component[]>();
+const appended = new WeakMap<Component, Component[]>();
 
 // Components visible only to specific clients.
-const exclusive = new Map<Component, Set<string>>();
+const exclusive = new WeakMap<Component, Set<string>>();
+
+// Component data
+const data = new WeakMap<Component, ComponentData>();
 
 export function render(cmp: Component) {
     if (incoming.size) {
@@ -79,7 +82,7 @@ export function wrapComponent(target: ComponentType): ComponentCreator {
             }
             else if (isDict(arg)) {
                 // Properties assigned from parent components
-                cmp.props = arg;
+                data.set(cmp, arg);
             }
             else if (typeof arg === "string") {
                 // Client ID cmp is visible to
@@ -95,93 +98,44 @@ export function wrapComponent(target: ComponentType): ComponentCreator {
 }
 
 export default class Component {
-    // Properties passed from parent renderer
-    props: Dict | null = null;
-
-    // Whether the component is a native DOM element or prefixed with `nn-`
-    static get native() {
-        return false;
-    }
-
-    static get opacity() {
-        return 1;
-    }
-
-    static get scale() {
-        return 1;
-    }
-
-    static get scaleX() {
-        return 1;
-    }
-
-    static get scaleY() {
-        return 1;
-    }
-
-    static get scaleZ() {
-        return 1;
-    }
-
-    static get rotate() {
-        return 0;
-    }
-
-    static get rotateX() {
-        return 0;
-    }
-
-    static get rotateY() {
-        return 0;
-    }
-
-    static get rotateZ() {
-        return 0;
-    }
-
-    static get translateX() {
-        return 0;
-    }
-
-    static get translateY() {
-        return 0;
-    }
-
-    static get translateZ() {
-        return 0;
-    }
-
-    static get width() {
+    // static dimension for alignment before element creation
+    static  width() {
         return null;
     }
 
+    // static dimension for alignment before element creation
     static get height() {
         return null;
     }
 
-    static get left() {
-        return null;
-    }
-
-    static get right() {
-        return null;
-    }
-
-    static get top() {
-        return null;
-    }
-
-    static get bottom() {
-        return null;
-    }
-
+    // static dimension for alignment before element creation
     static get aspectRatio() {
         return null;
     }
 
+    // Whether the component is a native DOM element or prefixed with `nn-`
+    get native() {
+        return false;
+    }
+
+    // component properties passed from parent renderer
+    get props() {
+        return data.get(this)?.props;
+    }
+
     // component CSS style that overwrites static styles
     get style() {
-        return {};
+        return data.get(this)?.style;
+    }
+
+    // component CSS style that overwrites static styles
+    get data() {
+        return data.get(this)?.data;
+    }
+
+    // class name
+    get className() {
+        return data.get(this)?.className;
     }
 
     // whether a click event is sent to this component
@@ -209,5 +163,81 @@ export default class Component {
 
     async init() {
         // Called when component is initialized before mounting
+    }
+
+    get opacity() {
+        return 1;
+    }
+
+    get scale() {
+        return 1;
+    }
+
+    get scaleX() {
+        return 1;
+    }
+
+    get scaleY() {
+        return 1;
+    }
+
+    get scaleZ() {
+        return 1;
+    }
+
+    get rotate() {
+        return 0;
+    }
+
+    get rotateX() {
+        return 0;
+    }
+
+    get rotateY() {
+        return 0;
+    }
+
+    get rotateZ() {
+        return 0;
+    }
+
+    get translateX() {
+        return 0;
+    }
+
+    get translateY() {
+        return 0;
+    }
+
+    get translateZ() {
+        return 0;
+    }
+
+    get width() {
+        return (this.constructor as typeof Component).width;
+    }
+
+    get height() {
+        return (this.constructor as typeof Component).height;
+    }
+
+    get left() {
+        return null;
+    }
+
+    get right() {
+        return null;
+    }
+
+    get top() {
+        return null;
+    }
+
+    get bottom() {
+        return null;
+    }
+
+    get aspectRatio() {
+        return (this.constructor as typeof Component).aspectRatio;
     }
 };

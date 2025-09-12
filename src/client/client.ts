@@ -1,4 +1,13 @@
 import Factory from "./factory";
+import elements from '../build/elements';
+import { registerElement } from "./element";
+
+for (const ext of elements) {
+    const defs = ext({});
+    for (const key in defs) {
+        registerElement(key, defs[key], true);
+    }
+}
 
 export default class Client {
     registerFS() {
