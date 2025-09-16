@@ -45,25 +45,25 @@ export function unCapitalize(str: string): Uncapitalize<string> {
     return (str.charAt(0).toLowerCase() + str.slice(1)) as Uncapitalize<string>;
 }
 
-/** Convert a camel or pascal string to a Kebab case.
+/** Convert camelCase or PascalCase or snake_case to kebab-case.
  * @param str The string to convert.
  */
 export function toKebab(str: string): Uncapitalize<string> {
-    return unCapitalize(str).replace(/[A-Z]/g, c => `-${c.toLowerCase()}`) as Uncapitalize<string>;
+    return unCapitalize(str).replace(/[A-Z]/g, c => `-${c.toLowerCase()}`).replace(/[-_]+/g, '-') as Uncapitalize<string>;
 }
 
-/** Convert a snake string to a Pascal string.
+/** Convert camelCase or PascalCase or kebab-case to snake_case.
+ * @param str The string to convert.
+ */
+export function toSnake(str: string): Uncapitalize<string> {
+    return unCapitalize(str).replace(/[A-Z]/g, c => `_${c.toLowerCase()}`).replace(/[_-]+/g, '_') as Uncapitalize<string>;
+}
+
+/** Convert snake_case or kebab-case to PascalCase.
  * @param str The string to convert.
  */
 export function toPascal(str: string): Capitalize<string> {
-    return capitalize(toCase(str));
-}
-
-/** Convert a snake string to a Camel or Pascal string.
- * @param str The string to convert.
- */
-export function toCase(str: string) {
-    return str.replace(/-./g, c => c.charAt(1).toUpperCase());
+    return capitalize(str.replace(/[-_](.)/g, (_, c) => c.toUpperCase()));
 }
 
 /** Check if an object is a plain object.
