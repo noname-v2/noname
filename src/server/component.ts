@@ -1,4 +1,4 @@
-import { isDict, apply } from "../utils";
+import { toKebab, isDict, apply } from "../utils";
 import translate from "./locale";
 
 // Component data storage
@@ -197,8 +197,27 @@ export default class Component {
     }
 
     // Get child component by tag and optionally slot index
-    query(tag: string, slot?: number): Component {
-        return this;
+    query(tag: string, slot?: number): Component | null {
+        const node = components.get(this)!;
+        const kebabTag = toKebab(tag);
+
+        // loop over direct children first
+        for (const child of node.children) {
+            const childNode = components.get(child)!;
+            if (toKebab(childNode.tag) === kebabTag && (slot === undefined || childNode.props.slot === slot)) {
+                return child;
+            }
+        }
+
+        // then recursively search in children
+        for (const child of node.children) {
+            const found = child.query(tag, slot);
+            if (found) {
+                return found;
+            }
+        }
+
+        return null;
     }
 
     // Append a component to its children.

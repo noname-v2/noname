@@ -27,7 +27,7 @@ declare global {
         dataset?: Dict; // HTML element dataset
         className?: string; // HTML element class name
         exclusive?: string[]; // client ids that can see this component, undefined or empty for all
-        slot?: string | number; // slot index as identifier when siblings have the same tag
+        slot?: number; // slot index as identifier when siblings have the same tag
         innerHTML?: string; // innerHTML of the component, no other children allowed if set
         x?: number;
         y?: number;

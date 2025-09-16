@@ -1,4 +1,4 @@
-import { isCapatalized, unCapitalize } from "../utils";
+import { isCapatalized, toSnake } from "../utils";
 import { getMaker } from "./component";
 import Component from "./component";
 import Entity from "./entity";
@@ -71,7 +71,7 @@ function walkDefs(defs: ExtensionObject, check_only: boolean) {
                     dict[name] = cls;
                     if (libCls === Component) {
                         // method to create child components inside Component.render(), e.g. ui.app()
-                        lib.ui[unCapitalize(name)] = getMaker(name, cls as ComponentType, ui);
+                        lib.ui[toSnake(name)] = getMaker(name, cls as ComponentType, ui);
                     }
                 }
                 break;
