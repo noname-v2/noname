@@ -1,8 +1,8 @@
 /*
  * Home component.
  */
-const ext: Extension = ({ ui }) => ({
-    Home: class extends ui.Component {}
+const ext: Extension = ({ components }) => ({
+    Home: class extends components.Component {}
 });
 
 export default ext;

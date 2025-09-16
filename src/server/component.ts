@@ -1,243 +1,274 @@
-import { isDict } from "../utils";
+import { isDict, apply } from "../utils";
+import translate from "./locale";
 
-// Map from component to its parent.
-const parent = new WeakMap<Component, Component>();
+// Component data storage
+const components = new WeakMap<Component, ComponentNode>();
 
-// Map from component to child components.
-const children = new WeakMap<Component, Component[]>();
+// ID of the next component to be created.
+let nextId = 1;
 
-// Newly created components to be processed.
-const incoming = new Set<Component>();
-
-// Child components from the args of ComponentCreator(), to be processed by the render() method of component A
-// by calling A.children. It can be later appended to either a child component of A or
-// A itself depending on where A.children() is called.
-const appended = new WeakMap<Component, Component[]>();
-
-// Components visible only to specific clients.
-const exclusive = new WeakMap<Component, Set<string>>();
-
-// Component data
-const data = new WeakMap<Component, ComponentData>();
-
-export function render(cmp: Component) {
-    if (incoming.size) {
-        throw new Error("Another component is being rendered.");
-    }
-
-    cmp.render();
-
-    // Assign all incoming components without parents as the immediate child of cmp.
-    if (!children.has(cmp)) {
-        children.set(cmp, []);
-    }
-    for (const child of incoming) {
-        if (parent.has(child)) {
-            throw new Error("Child component is already attached to another parent.");
-        }
-        children.get(cmp)!.push(child);
-        parent.set(child, cmp);
-    }
-    incoming.clear();
+// UI updates pending to be sent to main thread
+interface ComponentUpdate extends ElementUpdate {
+    props?: ComponentProps;
 }
 
-export function wrapComponent(target: ComponentType): ComponentCreator {
-    return (...args) => {
-        // When a new component is created, it is either passed as a parameter of ComponentCreator,
-        // or appended to the current rendering component. Putting it to incoming and decide afterwards.
-        const cmp = new target();
-        incoming.add(cmp);
+let pending: ComponentUpdate[] | null = [];
 
-        // Assign an incoming component as one of cmp.children().
-        const dispatch = (child: Component) => {
-            if (!incoming.has(child)) {
-                throw new Error("Unexpected child component.");
-            }
-            incoming.delete(cmp);
-            if (!appended.has(cmp)) {
-                appended.set(cmp, []);
-            }
-            appended.get(cmp)!.push(child);
+// Process pending updates and send to main thread
+function sync() {
+
+}
+
+// Schedule a component update
+function tick(update: ComponentUpdate) {
+    if (pending === null) {
+        pending = [];
+        queueMicrotask(sync);
+    }
+    pending.push(update);
+}
+
+// Default component layout properties
+const defaultLayout = {
+    opacity: 1,
+    x: 0,
+    y: 0,
+    z: 0,
+    scale: 1,
+    scaleX: 1,
+    scaleY: 1,
+    scaleZ: 1,
+    rotate: 0,
+    rotateX: 0,
+    rotateY: 0,
+    rotateZ: 0,
+    left: null,
+    top: null,
+    right: null,
+    bottom: null,
+    width: null,
+    height: null,
+    aspectRatio: null
+};
+
+// Data wrapper for component properties
+class ComponentNode {
+    id = nextId++; // unique component ID
+    tag: string // Component class name, e.g. "App"
+    children: Component[] = []; // Child components added by this.append()
+    parent: Component | null = null; // Parent component
+    source: Component | null = null; // Source component with the render() method that creates this component
+    props: ComponentProps = {}; // Component data
+
+    constructor(tag: string) {
+        this.tag = tag;
+    }
+
+    // TODO: Convert to Plain
+    flatten() { }
+}
+
+// Component currently being rendered.
+let rendering: Component | null = null;
+
+// Rendered components under a component being re-rendered, to be deleted if not resolved
+const resolving = new Set<Component>();
+
+// Components already matched with a new Component from render()
+const resolved = new Set<Component>();
+
+// Mark a component and its children as resolved / unresolved
+function unresolve(cmp: Component) {
+    resolving.add(cmp);
+    for (const child of components.get(cmp)!.children) {
+        if (components.get(child)!.source === rendering) {
+            unresolve(child);
         }
+    }
+}
+
+export function render(cmp: Component) {
+    // from here: iterate over children and add all with source === rendering to unresolved
+    if (rendering !== null || resolved.size || resolving.size) {
+        console.warn("An component is already being rendered: " + rendering + " <- " + cmp);
+        return;
+    }
+
+    // Setup render environment
+    rendering = cmp;
+    unresolve(cmp);
+    const n = resolving.size;
+    cmp.render();
+
+    // Remove outdated children
+    for (const child of resolving) {
+        child.remove();
+    }
+
+    // Cleanup
+    if (resolving.size || resolved.size !== n) {
+        console.warn(`Unmatched components after render(): ${resolving.size} unresolved, ${resolved.size} resolved, total ${n}`);
+    }
+    resolving.clear();
+    resolved.clear();
+}
+
+// Create a function for making component instances
+export function getMaker(tag: string, cls: ComponentType, ui: UI): ComponentMaker {
+    return (...args) => {
+        const cmp = new cls();
+        const node = new ComponentNode(tag);
 
         for (const arg of args) {
             if (arg instanceof Component) {
-                // Put Component to cmp.children().
-                dispatch(arg);
+                // Append arg as child component
+                cmp.append(arg);
             }
             else if (Array.isArray(arg)) {
+                // Append arg as child components
                 for (const item of arg) {
-                    if (item instanceof Component) {
-                        // Put Component[] (usually generated from parent.children()) to cmp.children()
-                        dispatch(item);
-                    }
-                    else if (typeof item === "string") {
-                        // List of client IDs cmp is visible to
-                        if (!exclusive.has(cmp)) {
-                            exclusive.set(cmp, new Set());
-                        }
-                        exclusive.get(cmp)!.add(item);
-                    }
+                    cmp.append(item);
                 }
             }
             else if (isDict(arg)) {
-                // Properties assigned from parent components
-                data.set(cmp, arg);
+                // Assign component properties
+                apply(node.props, arg);
             }
             else if (typeof arg === "string") {
-                // Client ID cmp is visible to
-                if (!exclusive.has(cmp)) {
-                    exclusive.set(cmp, new Set());
-                }
-                exclusive.get(cmp)!.add(arg);
+                // Append text node
+                cmp.append(ui.span({ innerHTML: translate(arg) }));
             }
+            else if (typeof arg === "number") {
+                // Slot index, to be handled by parent component
+                node.props.slot = arg;
+            }
+        }
+
+        if (node.props.innerHTML !== undefined && node.children.length > 0) {
+            console.warn("Component cannot have both innerHTML and children.");
         }
 
         return cmp;
     };
 }
 
+function matched(a: ComponentNode, b: ComponentNode) {
+    // Check constructor
+    if (a.tag !== b.tag) {
+        return false;
+    }
+
+    // Check the render() method that created the component
+    if (a.source !== b.source) {
+        return false;
+    }
+
+    // Check slots, slotA === slotB or both null/undefined
+    if (a.props.slot !== b.props.slot) {
+        return a.props.slot == null && b.props.slot == null;
+    }
+    return true;
+}
+
 export default class Component {
-    // static dimension for alignment before element creation
-    static  width() {
-        return null;
-    }
-
-    // static dimension for alignment before element creation
-    static get height() {
-        return null;
-    }
-
-    // static dimension for alignment before element creation
-    static get aspectRatio() {
-        return null;
-    }
+    #props = new Proxy({}, {
+        get: (_, prop: string) => {
+            const node = components.get(this)!;
+            if (prop in node.props) {
+                return node.props[prop as keyof ComponentProps];
+            }
+            return undefined;
+        }
+    }) as ComponentProps;
 
     // Whether the component is a native DOM element or prefixed with `nn-`
     get native() {
         return false;
     }
 
-    // component properties passed from parent renderer
+    // Component properties getter
     get props() {
-        return data.get(this)?.props;
+        return this.#props;
     }
 
-    // component CSS style that overwrites static styles
-    get style() {
-        return data.get(this)?.style;
-    }
-
-    // component CSS style that overwrites static styles
-    get data() {
-        return data.get(this)?.data;
-    }
-
-    // class name
-    get className() {
-        return data.get(this)?.className;
-    }
-
-    // whether a click event is sent to this component
-    get click() {
-        return false;
-    }
-
-    /* Re-distribute child components passed by creator during rendering.
-     * If a child is not appended to another other component after render() is complete,
-     * it will be appended as child like other incoming components created by render().
-    */
-    children() {
-        const children = appended.get(this) || [];
-        for (const child of children) {
-            incoming.add(child);
-        }
-        appended.delete(this);
-        return children;
-    }
-
-    // Default rendering method, which appends all child components passed as the arguments of ComponentCreator.
+    // Render component, defaults to creating an empty element.
     render() {
-        this.children();
+
     }
 
-    async init() {
-        // Called when component is initialized before mounting
+    // Get child component by tag and optionally slot index
+    query(tag: string, slot?: number): Component {
+        return this;
     }
 
-    get opacity() {
-        return 1;
+    // Append a component to its children.
+    append(target: Component) {
+        const node = components.get(this)!;
+
+        if (node.props.innerHTML !== null && node.props.innerHTML !== undefined && node.props.innerHTML !== "") {
+            console.warn("Component cannot have both innerHTML and children.");
+            return;
+        }
+
+        const targetNode = components.get(target)!;
+
+        if (targetNode.parent) {
+            if (rendering !== null || targetNode.source !== null) {
+                console.warn("Cannot move component created from render(), create a new one instead.");
+                return;
+            }
+            // Remove from previous parent only if not created from render()
+            const children = components.get(targetNode.parent)?.children;
+            if (children?.includes(target)) {
+                children.splice(children.indexOf(target), 1);
+            }
+            tick({ u: targetNode.id, p: node.id, props: targetNode.props });
+        }
+        else if (rendering !== null) {
+            // Match existing child if possible (only in a render() call)
+            for (const child of node.children) {
+                const childNode = components.get(child)!;
+                // Match by source, tag and slot
+                if (!resolved.has(child) && matched(childNode, targetNode)) {
+                    resolved.add(child);
+                    resolving.delete(child);
+
+                    // match child elements
+                    for (const targetChild of targetNode.children) {
+                        if (components.get(targetChild)?.source === rendering) {
+                            child.append(targetChild);
+                        }
+                    }
+
+                    // update child props
+                    tick({ u: childNode.id, props: targetNode.props });
+                    return;
+                }
+            }
+        }
+        else {
+            // create new child when no existing child match
+            tick({ u: targetNode.id, t: targetNode.tag, p: node.id, props: targetNode.props });
+        }
     }
 
-    get scale() {
-        return 1;
-    }
-
-    get scaleX() {
-        return 1;
-    }
-
-    get scaleY() {
-        return 1;
-    }
-
-    get scaleZ() {
-        return 1;
-    }
-
-    get rotate() {
-        return 0;
-    }
-
-    get rotateX() {
-        return 0;
-    }
-
-    get rotateY() {
-        return 0;
-    }
-
-    get rotateZ() {
-        return 0;
-    }
-
-    get translateX() {
-        return 0;
-    }
-
-    get translateY() {
-        return 0;
-    }
-
-    get translateZ() {
-        return 0;
-    }
-
-    get width() {
-        return (this.constructor as typeof Component).width;
-    }
-
-    get height() {
-        return (this.constructor as typeof Component).height;
-    }
-
-    get left() {
-        return null;
-    }
-
-    get right() {
-        return null;
-    }
-
-    get top() {
-        return null;
-    }
-
-    get bottom() {
-        return null;
-    }
-
-    get aspectRatio() {
-        return (this.constructor as typeof Component).aspectRatio;
+    // Remove a component from its parent.
+    remove() {
+        const node = components.get(this)!;
+        if (node.source !== rendering) {
+            console.warn("Component can only be removed from the same context as where it is created.");
+        }
+        else if (node.parent) {
+            const children = components.get(node.parent)?.children;
+            if (children?.includes(this)) {
+                children.splice(children.indexOf(this), 1);
+            }
+            node.parent = null;
+            if (rendering !== null) {
+                resolved.add(this);
+                resolving.delete(this);
+            }
+            tick({ u: node.id, p: -1 });
+        }
     }
 };

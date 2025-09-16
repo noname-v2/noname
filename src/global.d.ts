@@ -11,22 +11,52 @@ declare global {
     // CSS declaration
     type CSSDict = Partial<CSSStyleDeclaration>;
 
-    // HTML element data (name compressed for minification)
-    interface ElementData {
+    // Update to an HTML element (name compressed for minification)
+    interface ElementUpdate {
         s?: CSSDict; // style
         d?: Dict; // dataset
-        n?: string; // className
-        p?: number | null; // parent id
-        c?: number[]; // children ids
+        c?: string; // className
+        t?: string; // tag name of the element
+        p?: number; // parent element id, 0 for root element, -1 for removing the element
+        i?: string; // innerHTML
+        u: number; // unique element id
     }
 
-    // component data
-    interface ComponentData {
-        props?: Dict;
-        style?: CSSDict;
-        data?: Dict;
-        className?: string;
+    interface ComponentProps {
+        style?: CSSDict; // HTML element CSS style
+        dataset?: Dict; // HTML element dataset
+        className?: string; // HTML element class name
+        exclusive?: string[]; // client ids that can see this component, undefined or empty for all
+        slot?: string | number; // slot index as identifier when siblings have the same tag
+        innerHTML?: string; // innerHTML of the component, no other children allowed if set
+        x?: number;
+        y?: number;
+        z?: number;
+        opacity?: number;
+        scale?: number;
+        scaleX?: number;
+        scaleY?: number;
+        scaleZ?: number;
+        rotate?: number;
+        rotateX?: number;
+        rotateY?: number;
+        rotateZ?: number;
+        left?: number;
+        top?: number;
+        right?: number;
+        bottom?: number;
+        width?: number;
+        height?: number;
+        aspectRatio?: number;
+        [key: string]: Plain; // other properties passed to the component (trigger re-render on change)
     }
+
+    // Type for a function that returns component instance.
+    // string: innerHTML
+    // number: slot id for parent render() to identify
+    // Component: child component
+    // Partial<ComponentProps>: component properties
+    type ComponentMaker = (...args: (string | number | Component | Component[] | Partial<ComponentProps>)[]) => Component;
 
     // /** Properties assignable to FC. */
     // type FCProps = {
@@ -84,15 +114,15 @@ declare global {
     // entity type
     type Entity = _Entity;
     type EntityType = typeof _Entity;
-    type EntityData = Plain | Entity | EntityData[] | { [key: string]: EntityData };
-
-    /** Type for a function that returns component instance. */
-    type ComponentCreator = (...args: (string | string[] | Component | Component[] | Dict)[]) => Component;
+    type EntityData = Plain | Map | Set | Entity | EntityData[] | { [key: string]: EntityData };
 
     /** Type for APIs. */
     interface UI {
+        [key: Uncapitalize<string>]: ComponentMaker;
+    }
+
+    interface Components {
         [key: Capitalize<string>]: ComponentType;
-        [key: Uncapitalize<string>]: ComponentCreator;
     }
 
     interface Stages {
@@ -103,17 +133,23 @@ declare global {
         [key: Capitalize<string>]: EntityType;
     }
 
-    /** Type for a extension objects. */
+    // Argument passed to extension module function
     interface ExtensionAPI {
         ui: UI;
+        components: Components;
         stages: Stages;
         entities: Entities;
         state: Dict<EntityData>;
     }
 
-    type Extension = (api: ExtensionAPI) => {
+    // Return value of extension module function
+    interface ExtensionObject {
         [key: Capitalize<string>]: ComponentType | StageType | EntityType;
-    };
+    }
 
+    // An extension module is a function that takes ExtensionAPI and returns new definitions
+    type Extension = (api: ExtensionAPI) => ExtensionObject;
+
+    // Argument passed to element extension module function that defines HTML element callbacks
     type ElementExtension = (callbacks: Dict<_Callbacks>) => Dict<_Callbacks>;
 }

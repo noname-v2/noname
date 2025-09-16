@@ -1,14 +1,14 @@
 /** Merge two objects. */
-export function apply<T extends Dict<any> = Dict<any>>(to: T, from: Partial<T>, exclude?: (keyof T)[]): T {
+export function apply(to: Dict<any>, from: Dict<any>, exclude?: string[]): Dict<any> {
     for (const key in from) {
         if (exclude?.includes(key)) {
             continue;
         }
-        else if (to[key]?.constructor === Object && from[key]?.constructor === Object) {
+        else if (isDict(to[key]) && isDict(from[key])) {
             apply(to[key], from[key]!);
         }
-        else if (from[key] !== null && from[key] !== undefined) {
-            to[key] = from[key]!;
+        else if (from[key] !== undefined) {
+            to[key] = from[key];
         }
     }
     return to;

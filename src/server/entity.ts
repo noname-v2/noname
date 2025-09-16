@@ -19,9 +19,12 @@ export default class Entity {
             set(target, prop, value, receiver) {
                 // intercept property assignment
                 if (readOnly) {
-                    throw new Error("Cannot modify read-only proxy");
+                    console.warn("Cannot modify read-only proxy");
+                    return false;
                 }
-                return Reflect.set(target, prop, value, receiver);
+                else {
+                    return Reflect.set(target, prop, value, receiver);
+                }
             }
         });
     }

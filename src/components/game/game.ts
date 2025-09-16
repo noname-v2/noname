@@ -1,8 +1,8 @@
 /*
  * Game component.
  */
-const ext: Extension = ({ ui }) => ({
-    Game: class extends ui.Component {}
+const ext: Extension = ({ components }) => ({
+    Game: class extends components.Component {}
 });
 
 export default ext;

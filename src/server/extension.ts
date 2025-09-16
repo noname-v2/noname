@@ -1,5 +1,5 @@
 import { isCapatalized, unCapitalize } from "../utils";
-import { wrapComponent } from "./component";
+import { getMaker } from "./component";
 import Component from "./component";
 import Entity from "./entity";
 import Stage from "./stage";
@@ -8,40 +8,50 @@ import Stage from "./stage";
 const stateEntity = new Entity();
 const state = stateEntity.createProxy();
 
-// object storing class definitions
-const lib = new Map<ComponentType | StageType | EntityType, UI | Stages | Entities>([
+// internal object storing data for getters
+const lib = {
+    ui: {} as UI,
+    components: { Component } as Components,
+    stages: { Stage } as Stages,
+    entities: { Entity } as Entities
+};
+
+const libMap = new Map<ComponentType | StageType | EntityType, Components | Stages | Entities>([
     [Component, { Component }],
     [Stage, { Stage }],
     [Entity, { Entity }]
 ]);
 
-// read-only getters for Component classes and ComponentCreator functions
-const ui = new Proxy(lib.get(Component) as UI, {
-    get: function (target, prop: Capitalize<string> | Uncapitalize<string>) {
+// object storing ComponentMaker functions
+export const ui = new Proxy(lib.ui, {
+    get: function (target, prop: Uncapitalize<string>) {
+        return target[prop];
+    }
+});
+
+// read-only getters for Component classes and ComponentMaker functions
+export const components = new Proxy(lib.components, {
+    get: function (target, prop: Capitalize<string>) {
         return target[prop];
     }
 });
 
 // read-only getters for Stage classes
-const stages = new Proxy(lib.get(Stage) as Stages, {
+export const stages = new Proxy(lib.stages, {
     get: function (target, prop: Capitalize<string>) {
         return target[prop];
     }
 });
 
 // read-only getters for Entity classes
-const entities = new Proxy(lib.get(Entity) as Entities, {
+export const entities = new Proxy(lib.entities, {
     get: function (target, prop: Capitalize<string>) {
         return target[prop];
     }
 });
 
-/*
- * Import an extension of <Component | Stage | Entity>.
- */
-export default function importExtension(ext: Extension) {
-    const defs = ext({ ui, stages, entities, state });
-
+// Iterate over extension object definitions
+function walkDefs(defs: ExtensionObject, check_only: boolean) {
     for (const name in defs) {
         if (!isCapatalized(name)) {
             continue;
@@ -49,20 +59,36 @@ export default function importExtension(ext: Extension) {
         const cls = defs[name];
 
         // select the correct destination from lib for extension-defined class
-        for (const [libCls, dict] of lib.entries()) {
+        for (const [libCls, dict] of libMap.entries()) {
             if (cls.prototype instanceof libCls) {
-                if (name in dict && !(cls.prototype instanceof dict[name])) {
-                    // attempting to extend incompatible class
-                    throw new Error(`${name} already defined`);
+                if (check_only) {
+                    if (name in dict && !(cls.prototype instanceof dict[name])) {
+                        // attempting to extend incompatible class
+                        throw new Error(`${name} already defined`);
+                    }
                 }
-                dict[name] = cls;
-
-                // method to create child components inside Component.render(), e.g. ui.app()
-                if (libCls === Component) {
-                    (dict as UI)[unCapitalize(name)] = wrapComponent(cls as ComponentType);
+                else {
+                    dict[name] = cls;
+                    if (libCls === Component) {
+                        // method to create child components inside Component.render(), e.g. ui.app()
+                        lib.ui[unCapitalize(name)] = getMaker(name, cls as ComponentType, ui);
+                    }
                 }
                 break;
             }
         }
     }
+}
+
+/*
+ * Import an extension of <Component | Stage | Entity>.
+ */
+export function importExtension(ext: Extension) {
+    const defs = ext({ ui, components, stages, entities, state });
+
+    // Check duplicate definition before applying any changes
+    walkDefs(defs, true);
+
+    // Apply definitions from the extension
+    walkDefs(defs, false);
 }

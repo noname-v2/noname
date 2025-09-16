@@ -1,5 +1,5 @@
-const ext: Extension = ({ ui }) => ({
-    Background: class extends ui.Component {}
+const ext: Extension = ({ components }) => ({
+    Background: class extends components.Component {}
 });
 
 export default ext;

@@ -4,7 +4,7 @@
 const ext: ElementExtension = _ => ({
     App: {
         created() {
-            console.log('Gallery created');
+            console.log('App element created');
         }
     }
 });
