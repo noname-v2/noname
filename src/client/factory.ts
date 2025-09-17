@@ -1,11 +1,14 @@
 import { isDict, apply } from "../utils";
+import { createElement } from "./element";
 
 export default class Factory {
-    // parent and children of each element (id -> [parent id, Set<children id>])
-    #tree = new Map<number, [number, Set<number>]>();
+    // parent, children and properties of each element, '-' for detached or root elements
+    #tree = new Map<string, { parent: string, children: Set<string>, props: ComponentProps }>(
+        [['body', { parent: '-', children: new Set(), props: {} }]]
+    );
 
     // all created elements (id -> HTMLElement)
-    #elements = new Map<number, HTMLElement>();
+    #elements = new Map<string, HTMLElement>([['body', document.body]]);
 
     constructor(src: string) {
         const worker = new Worker(src);
@@ -33,102 +36,159 @@ export default class Factory {
     }
 
     // handle messages from worker / server
-    dispatch(ticks: ElementUpdate[]) {
-        const toAdd = new Map<number, [string, number]>(); // id -> [tag name, parent id]
-        const toRemove = new Set<number>();
-        const toUpdate = new Map<number, ElementUpdate>();
-        // const toAnimate = new Map<number, unknown>(); TODO: animation
+    dispatch(ticks: Dict<ElementUpdate>) {
+        const toAdd = new Map<string, [string, string]>(); // id -> [parent id, tag name] for new / moved elements
+        const toUpdate = new Map<string, ComponentProps>(); // id -> updated properties
+        const toUnlink = new Set<string>(); // ids to be removed
 
         // determine the type of each tick
-        for (const tick of ticks) {
-            const id = tick.u;
-            if (tick.r === 1) {
+        for (const id in ticks) {
+            const tick = ticks[id];
+            if (tick === 'x') {
                 // delete entire subtree
-                toRemove.add(id);
-            }
-            else {
-                if (tick.t) {
-                    // create new element
-                    toAdd.set(id, tick.t);
-                    this.#tree.set(id, [tick.t[1], new Set()]);
+                if (this.#tree.has(id)) {
+                    toUnlink.add(id);
                 }
+                else if (this.#elements.has(id)) {
+                    console.warn('Removing detached element', id);
+                    this.#elements.get(id)!.remove();
+                    this.#elements.delete(id);
+                }
+            }
+            else if (Array.isArray(tick)) {
+                // create or move element
+                if (this.#tree.has(id)) {
+                    // move existing element
+                    const node = this.#tree.get(id)!;
+                    if (node.parent === tick[1] && this.#elements.has(id)) {
+                        // only update properties if parent is the same and element exists
+                        toUpdate.set(id, tick[0]);
+                    }
+                    else {
+                        // detach from previous parent
+                        this.#tree.get(node.parent)?.children.delete(id);
 
-                // Initialize or merge updates to element properties
-                toUpdate.has(id) ? apply(toUpdate.get(id)!, tick) : toUpdate.set(id, tick);
+                        // update parent and properties
+                        node.parent = tick[1];
+                        apply(node.props, tick[0]);
+                        toAdd.set(id, [tick[1], tick[2]]);
+                    }
+                }
+                else {
+                    // create new element
+                    toAdd.set(id, [tick[1], tick[2]]);
+                    this.#tree.set(id, { parent: tick[1], children: new Set(), props: tick[0] });
+                }
+            }
+            else if (isDict(tick)) {
+                // update existing element
+                if (this.#tree.has(id) && this.#elements.has(id)) {
+                    toUpdate.set(id, tick);
+                }
+                else {
+                    console.warn('Updating non-existing element', id);
+                }
             }
         }
 
-        // construct the complete element tree with the added elements
-        for (const [id] of toAdd) {
-            const [parentId] = this.#tree.get(id)!;
-            // add to parent's children or mark for removal if parent does not exist
-            this.#tree.has(parentId) ? this.#tree.get(parentId)?.[1].add(id) : toRemove.add(id);
+        // Construct the new element tree with added and moved elements
+        for (const id of toAdd.keys()) {
+            const parentId = this.#tree.get(id)!.parent;
+            if (this.#tree.has(parentId)) {
+                // Add to parent's children
+                this.#tree.get(parentId)!.children.add(id);
+            }
+            else if (parentId !== '-') {
+                // Mark for removal if parent does not exist
+                console.warn('Parent not found for element', id, ', removing it.');
+                toUnlink.add(id);
+            }
         }
 
-        // update tree accounting for elements to be removed
-        const ignoreRemove = new Set<number>(); // elements with parents also being removed
-        const removeChildren = (id: number) => {
-            // do not update removed elements
+        // Update element tree by removing unlinked elements
+        const unlink = (id: string) => {
+            // Remove references to an element
+            this.#tree.delete(id);
+            this.#elements.delete(id);
             toAdd.delete(id);
             toUpdate.delete(id);
-
-            if (!this.#tree.has(id)) {
-                return;
-            }
-
-            // recursively remove children
-            const [parentId, children] = this.#tree.get(id)!;
-            for (const childId of children) {
-                // If child is already in the removing list, ignore it
-                // and ignore the actual remove() operation since the parent removal will do it
-                toRemove.has(childId) ? ignoreRemove.add(childId) : removeChildren(childId);
-            }
-
-            // remove from tree
-            this.#tree.delete(id);
-            this.#tree.get(parentId)?.[1].delete(id);
         };
-        for (const id of toRemove) {
-            removeChildren(id);
-        }
-    }
+        const unlinkChildren = (id: string) => {
+            // Recursively remove the references all child elements
+            this.#tree.get(id)?.children?.forEach(childId => {
+                unlinkChildren(childId);
+                unlink(childId);
+            });
+        };
+        toUnlink.forEach(unlinkChildren);
 
-    remove(id: number, removeFromDOM = true) {
-        if (!this.#elements.has(id)) {
-            return;
-        }
-        const [parentId, children, elem] = this.#elements.get(id)!;
-        
-        if (removeFromDOM) {
-            // remove from DOM (defer actual removal until the end if current UI update)
-            if (!this.#toRemove) {
-                this.#toRemove = document.createDocumentFragment();
-                setTimeout(() => {
-                    document.body.removeChild(this.#toRemove!);
-                    this.#toRemove = null;
-                });
+        // Actual DOM operations for top-level elements to be removed
+        for (const id of toUnlink) {
+            if (this.#tree.has(id)) {
+                this.#elements.get(id)?.remove();
+                this.#tree.get(this.#tree.get(id)!.parent)?.children.delete(id);
+                unlink(id);
             }
-            this.#toRemove.appendChild(elem);
-
-            // remove from parent's children list
-            this.#elements.get(parentId)?.[1]?.delete(id);
         }
 
-        // remove child data recursively
-        for (const childId of children) {
-            this.remove(childId, false);
+        // Create new HTML elements or detach old HTML elements
+        for (const [id, [_, tag]] of toAdd) {
+            if (!this.#elements.has(id)) {
+                this.#elements.set(id, createElement(tag));
+            }
+            else {
+                this.#elements.get(id)!.remove();
+            }
         }
 
-        // remove reference
-        this.#elements.delete(id);
-    }
+        // Append the children of elements to be added or moved
+        const ignoreAppend = new Set<string>(); // non-top-level elements to ignore DOM operation
+        const appendChildren = (id: string) => {
+            this.#tree.get(id)?.children?.forEach(childId => {
+                if (this.#elements.has(childId)) {
+                    this.#elements.get(id)?.appendChild(this.#elements.get(childId)!);
+                }
+                else {
+                    console.warn('Child element', childId, 'not found when appending to', id);
+                }
+                if (toAdd.has(childId)) {
+                    // children of this element will be appended elsewhere
+                    ignoreAppend.add(childId);
+                }
+                else {
+                    appendChildren(childId);
+                }
+            });
+        };
+        toAdd.keys().forEach(appendChildren);
 
-    create(id: number, data: ElementUpdate) {
-        
-    }
+        // Update element styles before appending to DOM
+        toAdd.keys().forEach(id => {
+            const props = this.#tree.get(id)!.props;
+            const el = this.#elements.get(id)!;
+            if (props?.style) {
+                apply(el.style, props.style);
+            }
+            // from here: actually update styles by ComponentProps
+        });
 
-    update(id: number, data: ElementUpdate) {
+        // Append all top-level elements to DOM
+        const frags = new Map<string, HTMLElement[]>();
+        for (const id of toAdd.keys()) {
+            if (ignoreAppend.has(id)) {
+                continue;
+            }
+            const parentId = this.#tree.get(id)?.parent!;
+            if (!frags.has(parentId)) {
+                frags.set(parentId, []);
+            }
+            frags.get(parentId)!.push(this.#elements.get(id)!);
+        }
+        for (const [parentId, children] of frags) {
+            this.#elements.get(parentId)?.append(...children);
+        }
 
+        // from here: address toUpdate
     }
 
     reload(e?: unknown) {

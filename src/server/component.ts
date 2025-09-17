@@ -8,52 +8,68 @@ const components = new WeakMap<Component, ComponentNode>();
 let nextId = 1;
 
 // UI updates pending to be sent to main thread
-interface ComponentUpdate extends ElementUpdate {
-    props?: ComponentProps;
-}
-
-let pending: ComponentUpdate[] | null = [];
+// key: Component ID
+// [0]: Updated properties
+// [1]: Parent component ID, null if unchanged, 'x' if unlinked, '-' if detached
+// [2]: HTML element tag, null if unchanged
+type ComponentUpdate = [ComponentProps, string | null, string | null];
+let pending: Dict<ComponentUpdate> | null = null;
 
 // Process pending updates and send to main thread
 function sync() {
-
+    if (!pending) {
+        return;
+    }
 }
 
 // Schedule a component update
-function tick(update: ComponentUpdate) {
+function tick(id: string, ...args: ComponentUpdate) {
     if (pending === null) {
-        pending = [];
+        pending = {};
         queueMicrotask(sync);
     }
-    pending.push(update);
+    if (id in pending) {
+         // merge updates
+        apply(pending[id][0], args[0]);
+
+        for (let i = 1; i < 3; i++) {
+            if (args[i] !== null) {
+                pending[id][i] = args[i];
+            }
+        }
+    }
+    else {
+        // create a new update
+        pending[id] = args;
+    }
 }
 
-// Default component layout properties
-const defaultLayout = {
-    opacity: 1,
-    x: 0,
-    y: 0,
-    z: 0,
-    scale: 1,
-    scaleX: 1,
-    scaleY: 1,
-    scaleZ: 1,
-    rotate: 0,
-    rotateX: 0,
-    rotateY: 0,
-    rotateZ: 0,
-    left: null,
-    top: null,
-    right: null,
-    bottom: null,
-    width: null,
-    height: null,
-    aspectRatio: null
-};
+// // Default component layout properties
+// const defaultLayout = {
+//     opacity: 1,
+//     x: 0,
+//     y: 0,
+//     z: 0,
+//     scale: 1,
+//     scaleX: 1,
+//     scaleY: 1,
+//     scaleZ: 1,
+//     rotate: 0,
+//     rotateX: 0,
+//     rotateY: 0,
+//     rotateZ: 0,
+//     left: null,
+//     top: null,
+//     right: null,
+//     bottom: null,
+//     width: null,
+//     height: null,
+//     aspectRatio: null
+// };
 
 // Data wrapper for component properties
 class ComponentNode {
-    id = nextId++; // unique component ID
+    id = (nextId++).toString(); // unique component ID
     tag: string // Component class name, e.g. "App"
     children: Component[] = []; // Child components added by this.append()
     parent: Component | null = null; // Parent component
@@ -87,7 +103,7 @@ function unresolve(cmp: Component) {
     }
 }
 
-export function render(cmp: Component) {
+function render(cmp: Component) {
     // from here: iterate over children and add all with source === rendering to unresolved
     if (rendering !== null || resolved.size || resolving.size) {
         console.warn("An component is already being rendered: " + rendering + " <- " + cmp);
@@ -102,7 +118,7 @@ export function render(cmp: Component) {
 
     // Remove outdated children
     for (const child of resolving) {
-        child.remove();
+        child.unlink();
     }
 
     // Cleanup
@@ -241,9 +257,9 @@ export default class Component {
             if (children?.includes(target)) {
                 children.splice(children.indexOf(target), 1);
             }
-            tick({ u: targetNode.id, p: node.id, props: targetNode.props });
         }
-        else if (rendering !== null) {
+        
+        if (rendering !== null) {
             // Match existing child if possible (only in a render() call)
             for (const child of node.children) {
                 const childNode = components.get(child)!;
@@ -260,22 +276,21 @@ export default class Component {
                     }
 
                     // update child props
-                    tick({ u: childNode.id, props: targetNode.props });
+                    tick(childNode.id, targetNode.props, null, null);
                     return;
                 }
             }
         }
-        else {
-            // create new child when no existing child match
-            tick({ u: targetNode.id, t: targetNode.tag, p: node.id, props: targetNode.props });
-        }
+
+        // create new child when no existing child match
+        tick(targetNode.id, targetNode.props, node.id, (target.native ? 'nn-' : '') + toKebab(targetNode.tag));
     }
 
-    // Remove a component from its parent.
-    remove() {
+    // Remove a component and clear its references.
+    unlink() {
         const node = components.get(this)!;
         if (node.source !== rendering) {
-            console.warn("Component can only be removed from the same context as where it is created.");
+            console.warn("Component can only be unlinked from the same context as where it is created.");
         }
         else if (node.parent) {
             const children = components.get(node.parent)?.children;
@@ -287,7 +302,28 @@ export default class Component {
                 resolved.add(this);
                 resolving.delete(this);
             }
-            tick({ u: node.id, p: -1 });
+            tick(node.id, {}, 'x', null);
+        }
+    }
+
+    // Remove a component but keep its reference.
+    detach() {
+        const node = components.get(this)!;
+        if (node.source !== null || rendering !== null) {
+            console.warn("Component cannot be detached inside a render() call.");
+        }
+        else if (node.parent) {
+            const children = components.get(node.parent)?.children;
+            if (children?.includes(this)) {
+                children.splice(children.indexOf(this), 1);
+            }
+            node.parent = null;
+            tick(node.id, {}, '-', null);
         }
     }
 };
+
+export function attachRoot(cmp: Component) {
+    render(cmp);
+    tick(components.get(cmp)!.id, {}, 'body', 'nn-' + toKebab(components.get(cmp)!.tag));
+}

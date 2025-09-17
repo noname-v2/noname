@@ -48,11 +48,9 @@ class NonameElement extends HTMLElement {
 }
 
 // Register the element with the given tag
-export function registerTag(tag: string) {
-    const tagName = ('nn-' + toKebab(tag));
-    const tagNameUpper = tagName.toUpperCase();
-
+export function registerTag(tagName: string) {
     if (!customElements.get(tagName)) {
+        const tagNameUpper = tagName.toUpperCase();
         customElements.define(tagName, class extends NonameElement {
             static get observedAttributes() {
                 return extensionCallbacks.get(tagNameUpper)?.observedAttributes
@@ -61,16 +59,27 @@ export function registerTag(tag: string) {
             }
         });
     }
-    return tagNameUpper;
 }
 
 // Define custom callbacks for the given tag
 export function registerElement(tag: string, callbacks: Callbacks, isExtension = false) {
-    const tagName = registerTag(tag);
+    const tagName = ('nn-' + toKebab(tag));
+    const tagNameUpper = tagName.toUpperCase();
+
+    registerTag(tagName);
+
     if (isExtension) {
-        extensionCallbacks.set(tagName, callbacks);
+        extensionCallbacks.set(tagNameUpper, callbacks);
     }
     else {
-        stockCallbacks.set(tagName, callbacks);
+        stockCallbacks.set(tagNameUpper, callbacks);
     }
+}
+
+// Create a new element
+export function createElement(tagName: string) {
+    if (tagName.startsWith('nn-')) {
+        registerTag(tagName);
+    }
+    return document.createElement(tagName);
 }

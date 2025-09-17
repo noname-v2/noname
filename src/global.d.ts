@@ -11,16 +11,14 @@ declare global {
     // CSS declaration
     type CSSDict = Partial<CSSStyleDeclaration>;
 
-    // Update to an HTML element (name compressed for minification)
-    interface ElementUpdate {
-        s?: CSSDict; // style
-        d?: Dict; // dataset
-        c?: string; // className
-        t?: string; // tag name of the element
-        p?: number; // parent element id, 0 for root element, -1 for removing the element
-        i?: string; // innerHTML
-        u: number; // unique element id
-    }
+    // Update to an HTML element
+    // 'x': delete entire subtree
+    // ComponentProps: update properties only
+    // [ComponentProps, string, string]:
+    // [0]: Updated properties
+    // [1]: Parent component ID, '-' if detached
+    // [2]: HTML element tag
+    type ElementUpdate = 'x' | ComponentProps | [ComponentProps, string, string];
 
     interface ComponentProps {
         style?: CSSDict; // HTML element CSS style
