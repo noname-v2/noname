@@ -11,12 +11,11 @@
   "scripts": {
     "clean": "rm -rf src/build && rm -rf build && rm -rf dist",
     "build": "sh scripts/build.sh",
-    "clean-build": "npm run clean && npm run build",
     "electron": "npx electron scripts/electron.js",
     "serve": "npx http-server .",
     "cb": "npm run clean-build",
     "debug": "sh scripts/build.sh electron && npm run electron",
-    "update": "sh scripts/build.sh electron"
+    "dev": "sh scripts/build.sh electron"
   },
   "devDependencies": {
     "@capacitor/cli": "^7.4.3",

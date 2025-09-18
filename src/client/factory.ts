@@ -17,7 +17,7 @@ export default class Factory {
         const worker = new Worker(src);
 
         worker.onerror = (e) => {
-            console.error('Worker error:', e.message, 'in', e.filename, 'at line', e.lineno);
+            console.error(e);
         };
 
         worker.onmessage = (e) => {

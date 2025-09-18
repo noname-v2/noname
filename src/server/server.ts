@@ -11,7 +11,7 @@ export default class Server {
         components.forEach(ext => importExtension(ext));
         entities.forEach(ext => importExtension(ext));
 
-        console.log('home worker started');
+        console.log('server started');
         attachRoot(ui.app());
    }
 }
