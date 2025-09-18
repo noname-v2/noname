@@ -18,14 +18,13 @@ declare global {
     // [0]: Updated properties
     // [1]: Parent component ID, '-' if detached
     // [2]: HTML element tag
-    type ElementUpdate = 'x' | ComponentProps | [ComponentProps, string, string];
+    type ElementUpdate = 'x' | `dur:${string}` | ComponentProps | [ComponentProps, string, string];
 
-    interface ComponentProps {
+    // Properties for client Factory to process
+    interface ElementProps {
         style?: CSSDict; // HTML element CSS style
         dataset?: Dict; // HTML element dataset
         className?: string; // HTML element class name
-        exclusive?: string[]; // client ids that can see this component, undefined or empty for all
-        slot?: number; // slot index as identifier when siblings have the same tag
         innerHTML?: string; // innerHTML of the component, no other children allowed if set
         x?: number;
         y?: number;
@@ -39,13 +38,20 @@ declare global {
         rotateX?: number;
         rotateY?: number;
         rotateZ?: number;
-        left?: number;
-        top?: number;
-        right?: number;
-        bottom?: number;
-        width?: number;
-        height?: number;
-        aspectRatio?: number;
+        transition?: number // transition duration (value x global_duration) for properties change
+    }
+
+    // Properties for server sync() to process into ElementProps
+    interface ComponentProps extends ElementProps {
+        exclusive?: string[]; // client ids that can see this component, undefined or empty for all
+        slot?: number; // slot index as identifier when siblings have the same tag
+        left?: number | null;
+        top?: number | null;
+        right?: number | null;
+        bottom?: number | null;
+        width?: number | null;
+        height?: number | null;
+        aspectRatio?: number | null;
         [key: string]: Plain; // other properties passed to the component (trigger re-render on change)
     }
 

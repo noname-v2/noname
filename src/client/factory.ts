@@ -2,8 +2,11 @@ import { isDict, apply } from "../utils";
 import { createElement } from "./element";
 
 export default class Factory {
+    // global transition duration multiplier
+    #global_duration = 300; // ms
+
     // parent, children and properties of each element, '-' for detached or root elements
-    #tree = new Map<string, { parent: string, children: Set<string>, props: ComponentProps }>(
+    #tree = new Map<string, { parent: string, children: Set<string>, props: ElementProps }>(
         [['body', { parent: '-', children: new Set(), props: {} }]]
     );
 
@@ -38,21 +41,30 @@ export default class Factory {
     // handle messages from worker / server
     dispatch(ticks: Dict<ElementUpdate>) {
         const toAdd = new Map<string, [string, string]>(); // id -> [parent id, tag name] for new / moved elements
-        const toUpdate = new Map<string, ComponentProps>(); // id -> updated properties
+        const toUpdate = new Map<string, ElementProps>(); // id -> updated properties
         const toUnlink = new Set<string>(); // ids to be removed
 
         // determine the type of each tick
         for (const id in ticks) {
             const tick = ticks[id];
-            if (tick === 'x') {
-                // delete entire subtree
-                if (this.#tree.has(id)) {
-                    toUnlink.add(id);
+            if (typeof tick === 'string') {
+                // Predefined actions
+                if (tick === 'x') {
+                    // delete entire subtree
+                    if (this.#tree.has(id)) {
+                        toUnlink.add(id);
+                    }
+                    else if (this.#elements.has(id)) {
+                        console.warn('Removing detached element', id);
+                        this.#elements.get(id)!.remove();
+                        this.#elements.delete(id);
+                    }
                 }
-                else if (this.#elements.has(id)) {
-                    console.warn('Removing detached element', id);
-                    this.#elements.get(id)!.remove();
-                    this.#elements.delete(id);
+                else if (tick.startsWith('dur:')) {
+                    const duration = parseInt(tick.slice(4), 10);
+                    if (!isNaN(duration) && duration < 5000 && duration >= 0) {
+                        this.#global_duration = duration;
+                    }
                 }
             }
             else if (Array.isArray(tick)) {
@@ -61,7 +73,7 @@ export default class Factory {
                     // move existing element
                     const node = this.#tree.get(id)!;
                     if (node.parent === tick[1] && this.#elements.has(id)) {
-                        // only update properties if parent is the same and element exists
+                        // update properties if parent is the same and element exists
                         toUpdate.set(id, tick[0]);
                     }
                     else {
@@ -76,8 +88,8 @@ export default class Factory {
                 }
                 else {
                     // create new element
-                    toAdd.set(id, [tick[1], tick[2]]);
                     this.#tree.set(id, { parent: tick[1], children: new Set(), props: tick[0] });
+                    toAdd.set(id, [tick[1], tick[2]]);
                 }
             }
             else if (isDict(tick)) {
@@ -131,28 +143,30 @@ export default class Factory {
             }
         }
 
-        // Create new HTML elements or detach old HTML elements
+        // Create new elements if necessary
         for (const [id, [_, tag]] of toAdd) {
             if (!this.#elements.has(id)) {
+                // Create new HTML elements
                 this.#elements.set(id, createElement(tag));
             }
             else {
+                // Keep existing element and remove from old parent
                 this.#elements.get(id)!.remove();
             }
         }
 
-        // Append the children of elements to be added or moved
-        const ignoreAppend = new Set<string>(); // non-top-level elements to ignore DOM operation
+        // Append non-top-level DOM elements to their parents first
+        const ignoreAppend = new Set<string>();
         const appendChildren = (id: string) => {
             this.#tree.get(id)?.children?.forEach(childId => {
-                if (this.#elements.has(childId)) {
-                    this.#elements.get(id)?.appendChild(this.#elements.get(childId)!);
+                if (this.#elements.has(id) && this.#elements.has(childId)) {
+                    this.#elements.get(id)!.appendChild(this.#elements.get(childId)!);
                 }
                 else {
                     console.warn('Child element', childId, 'not found when appending to', id);
                 }
                 if (toAdd.has(childId)) {
-                    // children of this element will be appended elsewhere
+                    // children of this element will be appended in the toAdd.keys().forEach(...) loop
                     ignoreAppend.add(childId);
                 }
                 else {
@@ -162,14 +176,9 @@ export default class Factory {
         };
         toAdd.keys().forEach(appendChildren);
 
-        // Update element styles before appending to DOM
+        // Set element styles before appending to DOM
         toAdd.keys().forEach(id => {
-            const props = this.#tree.get(id)!.props;
-            const el = this.#elements.get(id)!;
-            if (props?.style) {
-                apply(el.style, props.style);
-            }
-            // from here: actually update styles by ComponentProps
+            this.init(id);
         });
 
         // Append all top-level elements to DOM
@@ -189,6 +198,27 @@ export default class Factory {
         }
 
         // from here: address toUpdate
+    }
+
+    // initialize the style of an element
+    init(id: string) {
+        const props = this.#tree.get(id)!.props;
+        const el = this.#elements.get(id)!;
+        if (props?.style) {
+            apply(el.style, props.style);
+        }
+        // from here: actually update styles by ElementProps
+        console.log(this.#global_duration);
+    }
+
+    // update the style of an element
+    update(id: string, newProps: ElementProps) {
+        const props = this.#tree.get(id)!.props || newProps;
+        const el = this.#elements.get(id)!;
+        if (props?.style) {
+            apply(el.style, props.style);
+        }
+        // from here: actually update styles by ElementProps
     }
 
     reload(e?: unknown) {
