@@ -12,13 +12,20 @@ declare global {
     type CSSDict = Partial<CSSStyleDeclaration>;
 
     // Update to an HTML element
+    // key: Component ID
     // 'x': delete entire subtree
     // ComponentProps: update properties only
     // [ComponentProps, string, string]:
     // [0]: Updated properties
     // [1]: Parent component ID, '-' if detached
     // [2]: HTML element tag
-    type ElementUpdate = 'x' | `dur:${string}` | ComponentProps | [ComponentProps, string, string];
+    type ElementUpdate = 'x' | `dur:${string}` | ElementProps | [ElementProps, string, string];
+
+    // UI updates pending to be sent to main thread
+    // key: Component ID
+    // string: Parent component ID of new / moved component, '-' if detached, 'x' if unlinked
+    // ComponentProps: Update component properties
+    type ComponentUpdate = string | ComponentProps;
 
     // Properties for client Factory to process
     interface ElementProps {
@@ -62,87 +69,24 @@ declare global {
     // Partial<ComponentProps>: component properties
     type ComponentMaker = (...args: (string | number | Component | Component[] | Partial<ComponentProps>)[]) => Component;
 
-    // /** Properties assignable to FC. */
-    // type FCProps = {
-    //     // unique identifier of the component
-    //     cid?: string;
-
-    //     // animation state of the component, triggers an animation whenever value changes
-    //     animate?: string;
-
-    //     // bind a click and/or move event to the component, overwrites the bind() inside the component FC
-    //     bind?: BindConfig;
-
-    //     // customize the definition of child components
-    //     deviate?: Dict<(props: Dict) => JSX.Element>;
-
-    //     [key: string]: any;
-    // };
-
-    // /** Function component with synced state. */
-    // type FC = (data: FCProps, api: StateAPI) => JSX.Element;
-
-    // /** A module that exports function component. */
-    // type FCM = {
-    //     // function component(s)
-    //     [key: CapString]: FC;
-
-    //     // component style sheet
-    //     css?: CSSDict;
-
-    //     // reusable styles defined by the component
-    //     mixin?: Dict<Dict<CSSValue>>;
-    // }
-
-    // /** Stage main function. */
-    // type SF = (data: Dict, api: StageAPI) => any;
-
-    // /** A module that exports function component. */
-    // type SFM = {
-    //     [key: string]: SF;
-    // };
-
-    /** Type for point location */
-    type Point = {x: number, y: number};
-
-    /** Type for an area */
-    type Region = {x: [number, number], y: [number, number]};
-
-    // component type
+    // Component type
     type Component = _Component;
     type ComponentType = typeof _Component;
 
     type Stage = _Stage;
     type StageType = typeof _Stage;
 
-    // entity type
+    // Entity type
     type Entity = _Entity;
     type EntityType = typeof _Entity;
     type EntityData = Plain | Map | Set | Entity | EntityData[] | { [key: string]: EntityData };
 
-    /** Type for APIs. */
-    interface UI {
-        [key: Uncapitalize<string>]: ComponentMaker;
-    }
-
-    interface Components {
-        [key: Capitalize<string>]: ComponentType;
-    }
-
-    interface Stages {
-        [key: Capitalize<string>]: StageType;
-    }
-
-    interface Entities {
-        [key: Capitalize<string>]: EntityType;
-    }
-
     // Argument passed to extension module function
     interface ExtensionAPI {
-        ui: UI;
-        components: Components;
-        stages: Stages;
-        entities: Entities;
+        ui: { [key: Uncapitalize<string>]: ComponentMaker; };
+        components: { [key: Capitalize<string>]: ComponentType; };
+        stages: { [key: Capitalize<string>]: StageType; };
+        entities: { [key: Capitalize<string>]: EntityType; };
         state: Dict<EntityData>;
     }
 

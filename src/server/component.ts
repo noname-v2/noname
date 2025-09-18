@@ -7,12 +7,7 @@ const components = new WeakMap<Component, ComponentNode>();
 // ID of the next component to be created.
 let nextId = 1;
 
-// UI updates pending to be sent to main thread
-// key: Component ID
-// [0]: Updated properties
-// [1]: Parent component ID, null if unchanged, 'x' if unlinked, '-' if detached
-// [2]: HTML element tag, null if unchanged
-type ComponentUpdate = [ComponentProps, string | null, string | null];
+// Pending updates to be processed and sent to main thread
 let pending: Dict<ComponentUpdate> | null = null;
 
 // Process pending updates and send to main thread
@@ -23,24 +18,45 @@ function sync() {
 }
 
 // Schedule a component update
-function tick(id: string, ...args: ComponentUpdate) {
+function tick(cmp: Component, update: ComponentUpdate) {
     if (pending === null) {
         pending = {};
         queueMicrotask(sync);
     }
+    const node = components.get(cmp)!;
+    const id = node.id;
     if (id in pending) {
          // merge updates
-        apply(pending[id][0], args[0]);
-
-        for (let i = 1; i < 3; i++) {
-            if (args[i] !== null) {
-                pending[id][i] = args[i];
+         if (update === 'x') {
+            pending[id] = 'x';
+         }
+         else if (pending[id] === 'x') {
+            console.warn("Component already marked for deletion, cannot update.");
+         }
+         else if (typeof update === 'string') {
+            // Apply queued props change immediately since parent is changed
+            if (isDict(pending[id])) {
+                apply(node.props, pending[id]);
             }
-        }
+            pending[id] = update;
+         }
+         else if (typeof pending[id] === 'string') {
+            // Update props directly if parent is changed
+            if (isDict(update)) {
+                apply(node.props, update);
+            }
+         }
+         else if (isDict(pending[id]) && isDict(update)) {
+            // Merge props update
+            apply(pending[id], update);
+         }
+         else {
+            console.warn("Unknown update type: ", pending[id], update);
+         }
     }
     else {
-        // create a new update
-        pending[id] = args;
+        // Create a new update
+        pending[id] = update;
     }
 }
 
@@ -130,10 +146,11 @@ function render(cmp: Component) {
 }
 
 // Create a function for making component instances
-export function getMaker(tag: string, cls: ComponentType, ui: UI): ComponentMaker {
+export function getMaker(tag: string, cls: ComponentType, ui: ExtensionAPI['ui']): ComponentMaker {
     return (...args) => {
         const cmp = new cls();
         const node = new ComponentNode(tag);
+        components.set(cmp, node);
 
         for (const arg of args) {
             if (arg instanceof Component) {
@@ -207,10 +224,8 @@ export default class Component {
         return this.#props;
     }
 
-    // Render component, defaults to creating an empty element.
-    render() {
-
-    }
+    // Define child components here
+    render() {}
 
     // Get child component by tag and optionally slot index
     query(tag: string, slot?: number): Component | null {
@@ -248,8 +263,8 @@ export default class Component {
         const targetNode = components.get(target)!;
 
         if (targetNode.parent) {
-            if (rendering !== null || targetNode.source !== null) {
-                console.warn("Cannot move component created from render(), create a new one instead.");
+            if (targetNode.source !== rendering) {
+                console.warn("Component can only be moved from the same context as where it is created.");
                 return;
             }
             // Remove from previous parent only if not created from render()
@@ -277,6 +292,9 @@ export default class Component {
 
                     // update child props
                     tick(childNode.id, targetNode.props, null, null);
+
+                    // Remove temporary component
+                    tick(targetNode.id, {}, 'x', null);
                     return;
                 }
             }

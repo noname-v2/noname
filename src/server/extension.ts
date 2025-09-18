@@ -4,50 +4,45 @@ import Component from "./component";
 import Entity from "./entity";
 import Stage from "./stage";
 
-// global state object
-const stateEntity = new Entity();
-const state = stateEntity.createProxy();
-
-// internal object storing data for getters
+// Internal object storing data for getters
 const lib = {
-    ui: {} as UI,
-    components: { Component } as Components,
-    stages: { Stage } as Stages,
-    entities: { Entity } as Entities
-};
+    ui: {},
+    components: { Component },
+    stages: { Stage },
+    entities: { Entity },
+    state: new Entity()
+} as ExtensionAPI;
 
-const libMap = new Map<ComponentType | StageType | EntityType, Components | Stages | Entities>([
-    [Component, { Component }],
-    [Stage, { Stage }],
-    [Entity, { Entity }]
+// Map for possible extension-defined class types to their destination in lib
+const clsMap = new Map<ComponentType | StageType | EntityType, ExtensionAPI['components' | 'stages' | 'entities']>([
+    [Component, lib.components],
+    [Stage, lib.stages],
+    [Entity, lib.entities]
 ]);
 
-// object storing ComponentMaker functions
-export const ui = new Proxy(lib.ui, {
-    get: function (target, prop: Uncapitalize<string>) {
-        return target[prop];
-    }
-});
-
-// read-only getters for Component classes and ComponentMaker functions
-export const components = new Proxy(lib.components, {
-    get: function (target, prop: Capitalize<string>) {
-        return target[prop];
-    }
-});
-
-// read-only getters for Stage classes
-export const stages = new Proxy(lib.stages, {
-    get: function (target, prop: Capitalize<string>) {
-        return target[prop];
-    }
-});
-
-// read-only getters for Entity classes
-export const entities = new Proxy(lib.entities, {
-    get: function (target, prop: Capitalize<string>) {
-        return target[prop];
-    }
+// Read-only getters for ExtensionAPI
+const api = Object.freeze({
+    ui: new Proxy(lib.ui, {
+        get: function (target, prop: Uncapitalize<string>) {
+            return target[prop];
+        }
+    }),
+    components: new Proxy(lib.components, {
+        get: function (target, prop: Capitalize<string>) {
+            return target[prop];
+        }
+    }),
+    stages: new Proxy(lib.stages, {
+        get: function (target, prop: Capitalize<string>) {
+            return target[prop];
+        }
+    }),
+    entities: new Proxy(lib.entities, {
+        get: function (target, prop: Capitalize<string>) {
+            return target[prop];
+        }
+    }),
+    state: lib.state.createProxy()
 });
 
 // Iterate over extension object definitions
@@ -59,7 +54,7 @@ function walkDefs(defs: ExtensionObject, check_only: boolean) {
         const cls = defs[name];
 
         // select the correct destination from lib for extension-defined class
-        for (const [libCls, dict] of libMap.entries()) {
+        for (const [libCls, dict] of clsMap.entries()) {
             if (cls.prototype instanceof libCls) {
                 if (check_only) {
                     if (name in dict && !(cls.prototype instanceof dict[name])) {
@@ -71,7 +66,7 @@ function walkDefs(defs: ExtensionObject, check_only: boolean) {
                     dict[name] = cls;
                     if (libCls === Component) {
                         // method to create child components inside Component.render(), e.g. ui.app()
-                        lib.ui[toSnake(name)] = getMaker(name, cls as ComponentType, ui);
+                        lib.ui[toSnake(name)] = getMaker(name, cls as ComponentType, api.ui);
                     }
                 }
                 break;
@@ -84,7 +79,7 @@ function walkDefs(defs: ExtensionObject, check_only: boolean) {
  * Import an extension of <Component | Stage | Entity>.
  */
 export function importExtension(ext: Extension) {
-    const defs = ext({ ui, components, stages, entities, state });
+    const defs = ext(api);
 
     // Check duplicate definition before applying any changes
     walkDefs(defs, true);
