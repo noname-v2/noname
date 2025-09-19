@@ -1,9 +1,10 @@
 import Factory from "./factory";
 import elements from '../build/elements';
+import logger from '../logger';
 import { registerElement } from "./element";
 
 for (const ext of elements) {
-    const defs = ext({});
+    const defs = ext(logger, {});
     for (const key in defs) {
         registerElement(key, defs[key], true);
     }
@@ -24,7 +25,7 @@ export default class Client {
             // Create a web worker to run the server code
             const worker = new Worker(src);
             const factory = new Factory(document.body);
-            worker.onerror = e => console.error(e);
+            worker.onerror = e => logger.error(e);
             worker.onmessage = e => factory.onmessage(e.data);
             return factory;
         }

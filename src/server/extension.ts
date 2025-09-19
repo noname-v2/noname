@@ -1,5 +1,6 @@
 import { isCapatalized, toSnake } from "../utils";
 import { getMaker } from "./component";
+import logger from '../logger';
 import Component from "./component";
 import Entity from "./entity";
 import Stage from "./stage";
@@ -10,7 +11,8 @@ const lib = {
     components: { Component },
     stages: { Stage },
     entities: { Entity },
-    state: new Entity()
+    state: new Entity(),
+    logger
 } as ExtensionAPI;
 
 // Map for possible extension-defined class types to their destination in lib
@@ -45,7 +47,8 @@ export const api = Object.freeze({
             return target[prop];
         }
     }),
-    state: lib.state.createProxy()
+    state: lib.state.createProxy(),
+    logger: lib.logger
 });
 
 // Iterate over extension object definitions

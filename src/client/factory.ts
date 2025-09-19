@@ -1,3 +1,4 @@
+import logger from '../logger';
 import { isDict, apply } from "../utils";
 import { createElement } from "./element";
 
@@ -44,7 +45,7 @@ export default class Factory {
                         toUnlink.add(id);
                     }
                     else if (this.#elements.has(id)) {
-                        console.warn('Removing detached element', id);
+                        logger.warn('Removing detached element', id);
                         this.#elements.get(id)!.remove();
                         this.#elements.delete(id);
                     }
@@ -87,7 +88,7 @@ export default class Factory {
                     toUpdate.set(id, tick);
                 }
                 else {
-                    console.warn('Updating non-existing element', id);
+                    logger.warn('Updating non-existing element', id);
                 }
             }
         }
@@ -101,7 +102,7 @@ export default class Factory {
             }
             else if (parentId !== '-') {
                 // Mark for removal if parent does not exist
-                console.warn('Parent not found for element', id, ', removing it.');
+                logger.warn('Parent not found for element', id, ', removing it.');
                 toUnlink.add(id);
             }
         }
@@ -152,7 +153,7 @@ export default class Factory {
                     this.#elements.get(id)!.appendChild(this.#elements.get(childId)!);
                 }
                 else {
-                    console.warn('Child element', childId, 'not found when appending to', id);
+                    logger.warn('Child element', childId, 'not found when appending to', id);
                 }
                 if (toAdd.has(childId)) {
                     // children of this element will be appended in the toAdd.keys().forEach(...) loop
@@ -197,7 +198,7 @@ export default class Factory {
             apply(el.style, props.style);
         }
         // from here: actually update styles by ElementProps
-        console.log(this.#global_duration);
+        logger.log(this.#global_duration);
     }
 
     // update the style of an element
@@ -212,7 +213,7 @@ export default class Factory {
 
     reload(e?: unknown) {
         // TODO: reload the entire UI
-        console.error('Worker error:', e);
+        logger.error('Worker error:', e);
     }
 
     onmessage(data: any) {

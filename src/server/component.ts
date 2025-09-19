@@ -1,4 +1,5 @@
 import translate from "./locale";
+import logger from '../logger';
 import { toKebab, isDict, apply } from "../utils";
 import { components, resolving, resolved, unsynced, tick, getRendering, ComponentNode } from './tree';
 
@@ -29,6 +30,7 @@ export function getMaker(tag: string, cls: ComponentType, ui: ExtensionAPI['ui']
         components.set(cmp, node);
         unsynced.add(cmp);
         tick(cmp, '-')
+        logger.log(`Creating component <${node.tag}> id=${node.id}`);
 
         for (const arg of args) {
             if (arg instanceof Component) {
@@ -56,7 +58,7 @@ export function getMaker(tag: string, cls: ComponentType, ui: ExtensionAPI['ui']
         }
 
         if (node.props.innerHTML !== null && node.props.innerHTML !== undefined && node.props.innerHTML !== "" && node.children.length > 0) {
-            console.warn("Component cannot have both innerHTML and children, removing innerHTML.");
+            logger.warn("Component cannot have both innerHTML and children, removing innerHTML.");
             node.props.innerHTML = "";
         }
 
@@ -118,7 +120,7 @@ export default class Component {
         const rendering = getRendering();
 
         if (node.props.innerHTML !== null && node.props.innerHTML !== undefined && node.props.innerHTML !== "") {
-            console.warn("Component cannot have both innerHTML and children, skipping append().");
+            logger.warn("Component cannot have both innerHTML and children, skipping append().");
             return;
         }
 
@@ -126,7 +128,7 @@ export default class Component {
 
         if (targetNode.parent) {
             if (targetNode.source !== rendering) {
-                console.warn("Component can only be moved from the same context as where it is created.", node, targetNode);
+                logger.warn("Component can only be moved from the same context as where it is created.", node, targetNode);
                 return;
             }
             // Remove from previous parent only if created from the same render() context
@@ -189,8 +191,9 @@ export default class Component {
     // Remove reference from parent
     #detach() {
         const node = components.get(this)!;
-        if (node.source !== getRendering()) {
-            console.warn("Component can only be detached from the same context as where it is created.");
+        const rendering = getRendering();
+        if (node.source !== rendering) {
+            logger.warn("Component can only be detached from the same context as where it is created", node, components.get(rendering!) ?? null);
             return false;
         }
         if (node.parent) {

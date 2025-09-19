@@ -14,8 +14,8 @@
     "electron": "npx electron scripts/electron.js",
     "serve": "npx http-server .",
     "cb": "npm run clean-build",
-    "debug": "sh scripts/build.sh electron && npm run electron",
-    "dev": "sh scripts/build.sh electron"
+    "debug": "sh scripts/build.sh debug && npm run electron",
+    "dev": "sh scripts/build.sh debug"
   },
   "devDependencies": {
     "@capacitor/cli": "^7.4.3",

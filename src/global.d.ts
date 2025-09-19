@@ -2,6 +2,7 @@ import type _Component from './server/component';
 import type _Stage from './server/stage';
 import type _Entity from './server/entity';
 import type _Callbacks from './client/element';
+import type { Logger } from './logger';
 
 declare global {
     // Plain object
@@ -89,6 +90,7 @@ declare global {
         stages: { [key: Capitalize<string>]: StageType; };
         entities: { [key: Capitalize<string>]: EntityType; };
         state: Dict<EntityData>;
+        logger: Logger;
     }
 
     // Return value of extension module function
@@ -100,5 +102,5 @@ declare global {
     type Extension = (api: ExtensionAPI) => ExtensionObject;
 
     // Argument passed to element extension module function that defines HTML element callbacks
-    type ElementExtension = (callbacks: Dict<_Callbacks>) => Dict<_Callbacks>;
+    type ElementExtension = (logger: Logger, callbacks: Dict<_Callbacks>) => Dict<_Callbacks>;
 }

@@ -28,7 +28,7 @@ function createWindow() {
 	if (server === null) {
 		const expressApp = express();
 		// Serve static files
-		expressApp.use(express.static(path.join(__dirname, '../dist/electron')));
+		expressApp.use(express.static(path.join(__dirname, '../dist/debug')));
 		
 		portfinder.basePort = 8088;
 		portfinder.getPort((err, port) => {

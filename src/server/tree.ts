@@ -1,4 +1,5 @@
 import { isDict, apply } from "../utils";
+import logger from '../logger';
 import type Server from './server';
 
 // ID of the next component to be created.
@@ -127,7 +128,7 @@ function propsToElement(props: ComponentProps): ElementProps {
         if (dimensionProps.has(key)) {
             eprops.style ??= {};
             if (key in eprops.style) {
-                console.warn("Overriding existing style." + key);
+                logger.warn("Overriding existing style." + key);
             }
             eprops.style[key] = key === 'aspectRatio' ? toRatioString(value) : toDimensionString(value);
         }
@@ -237,7 +238,7 @@ export function tick(cmp: Component, update: ComponentUpdate) {
             pending.set(cmp, 'x');
         }
         else if (current === 'x') {
-            console.warn("Component already marked for deletion, cannot update.");
+            logger.warn("Component already marked for deletion, cannot update.");
         }
         else if (typeof update === 'string') {
             // Apply queued props change immediately since parent is changed
@@ -257,7 +258,7 @@ export function tick(cmp: Component, update: ComponentUpdate) {
             apply(current, update);
         }
         else {
-            console.warn("Unknown update type: ", current, update);
+            logger.warn("Unknown update type: ", current, update);
         }
     }
     else {
@@ -323,7 +324,7 @@ function unresolve(cmp: Component) {
 
 function render(cmp: Component) {
     if (rendering !== null || resolved.size || resolving.size) {
-        console.warn("An component is already being rendered: " + rendering + " <- " + cmp);
+        logger.warn("An component is already being rendered: " + rendering + " <- " + cmp);
         return;
     }
 
@@ -340,7 +341,7 @@ function render(cmp: Component) {
 
     // Cleanup
     if (resolving.size || resolved.size !== n) {
-        console.warn(`Unmatched components after render(): ${resolving.size} unresolved, ${resolved.size} resolved, total ${n}`);
+        logger.warn(`Unmatched components after render(): ${resolving.size} unresolved, ${resolved.size} resolved, total ${n}`);
         resolving.clear();
     }
     resolved.clear();

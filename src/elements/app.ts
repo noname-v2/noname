@@ -1,10 +1,10 @@
 /*
  * Gallery element.
  */
-const ext: ElementExtension = _ => ({
+const ext: ElementExtension = (logger) => ({
     App: {
         created() {
-            console.log('App element created');
+            logger.log('App element created');
         }
     }
 });

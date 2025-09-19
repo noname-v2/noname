@@ -1,3 +1,5 @@
+import logger from '../logger';
+
 // unique entity ID
 let entityCount = 0;
 
@@ -19,7 +21,7 @@ export default class Entity {
             set(target, prop, value, receiver) {
                 // intercept property assignment
                 if (readOnly) {
-                    console.warn("Cannot modify read-only proxy");
+                    logger.warn("Cannot modify read-only proxy");
                     return false;
                 }
                 else {
