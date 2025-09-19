@@ -7,56 +7,77 @@ const components = new WeakMap<Component, ComponentNode>();
 // ID of the next component to be created.
 let nextId = 1;
 
+// Newly created but not yet synced components
+// When deleted before sync(), no data needs to be sent to main thread
+const unsynced = new Set<Component>();
+
+// Components that are marked for rendering (created, moved or custom properties updated)
+const torender = new Set<Component>();
+
+// Components already rendered once during current tick to avoid infinite loops
+const rendered = new Set<Component>();
+
+// Component currently being rendered.
+let rendering: Component | null = null;
+
 // Pending updates to be processed and sent to main thread
-let pending: Dict<ComponentUpdate> | null = null;
+let pending: Map<Component, ComponentUpdate> | null = null;
 
 // Process pending updates and send to main thread
 function sync() {
     if (!pending) {
         return;
     }
+
+    // Process components marked for rendering first
+
+    // Unlink child components recursively
+
+    // Cleanup unsynced components that are marked for deletion
+    
+    // Sync to main thread if all components are rendered, otherwise render the next component in line
 }
 
 // Schedule a component update
 function tick(cmp: Component, update: ComponentUpdate) {
     if (pending === null) {
-        pending = {};
+        pending = new Map();
         queueMicrotask(sync);
     }
-    const node = components.get(cmp)!;
-    const id = node.id;
-    if (id in pending) {
-         // merge updates
-         if (update === 'x') {
-            pending[id] = 'x';
-         }
-         else if (pending[id] === 'x') {
+    if (pending.has(cmp)) {
+        // merge updates
+        const node = components.get(cmp)!;
+        const current = pending.get(cmp)!;
+        if (update === 'x') {
+            pending.set(cmp, 'x');
+        }
+        else if (current === 'x') {
             console.warn("Component already marked for deletion, cannot update.");
-         }
-         else if (typeof update === 'string') {
+        }
+        else if (typeof update === 'string') {
             // Apply queued props change immediately since parent is changed
-            if (isDict(pending[id])) {
-                apply(node.props, pending[id]);
+            if (isDict(current)) {
+                apply(node.props, current);
             }
-            pending[id] = update;
-         }
-         else if (typeof pending[id] === 'string') {
+            pending.set(cmp, update);
+        }
+        else if (typeof current === 'string') {
             // Update props directly if parent is changed
             if (isDict(update)) {
                 apply(node.props, update);
             }
-         }
-         else if (isDict(pending[id]) && isDict(update)) {
+        }
+        else if (isDict(current) && isDict(update)) {
             // Merge props update
-            apply(pending[id], update);
-         }
-         else {
-            console.warn("Unknown update type: ", pending[id], update);
-         }
+            apply(current, update);
+        }
+        else {
+            console.warn("Unknown update type: ", current, update);
+        }
     }
     else {
         // Create a new update
-        pending[id] = update;
+        pending.set(cmp, update);
     }
 }
 
@@ -89,7 +110,7 @@ class ComponentNode {
     tag: string // Component class name, e.g. "App"
     children: Component[] = []; // Child components added by this.append()
     parent: Component | null = null; // Parent component
-    source: Component | null = null; // Source component with the render() method that creates this component
+    source: Component | null = rendering; // Source component with the render() method that creates this component
     props: ComponentProps = {}; // Component data
 
     constructor(tag: string) {
@@ -99,9 +120,6 @@ class ComponentNode {
     // TODO: Convert to Plain
     flatten() { }
 }
-
-// Component currently being rendered.
-let rendering: Component | null = null;
 
 // Rendered components under a component being re-rendered, to be deleted if not resolved
 const resolving = new Set<Component>();
@@ -151,6 +169,8 @@ export function getMaker(tag: string, cls: ComponentType, ui: ExtensionAPI['ui']
         const cmp = new cls();
         const node = new ComponentNode(tag);
         components.set(cmp, node);
+        unsynced.add(cmp);
+        tick(cmp, '-')
 
         for (const arg of args) {
             if (arg instanceof Component) {
@@ -235,7 +255,7 @@ export default class Component {
         // loop over direct children first
         for (const child of node.children) {
             const childNode = components.get(child)!;
-            if (toKebab(childNode.tag) === kebabTag && (slot === undefined || childNode.props.slot === slot)) {
+            if (childNode.tag === kebabTag && (slot === undefined || childNode.props.slot === slot)) {
                 return child;
             }
         }
@@ -264,18 +284,18 @@ export default class Component {
 
         if (targetNode.parent) {
             if (targetNode.source !== rendering) {
-                console.warn("Component can only be moved from the same context as where it is created.");
+                console.warn("Component can only be moved from the same context as where it is created.", node, targetNode);
                 return;
             }
-            // Remove from previous parent only if not created from render()
+            // Remove from previous parent only if created from the same render() context
             const children = components.get(targetNode.parent)?.children;
             if (children?.includes(target)) {
                 children.splice(children.indexOf(target), 1);
             }
         }
-        
+
         if (rendering !== null) {
-            // Match existing child if possible (only in a render() call)
+            // Match existing child if possible (only in a render() context)
             for (const child of node.children) {
                 const childNode = components.get(child)!;
                 // Match by source, tag and slot
@@ -291,17 +311,19 @@ export default class Component {
                     }
 
                     // update child props
-                    tick(childNode.id, targetNode.props, null, null);
+                    tick(child, targetNode.props);
 
                     // Remove temporary component
-                    tick(targetNode.id, {}, 'x', null);
+                    tick(target, 'x');
                     return;
                 }
             }
         }
 
         // create new child when no existing child match
-        tick(targetNode.id, targetNode.props, node.id, (target.native ? 'nn-' : '') + toKebab(targetNode.tag));
+        tick(target, node.id);
+        node.children.push(target);
+        targetNode.parent = this;
     }
 
     // Remove a component and clear its references.
@@ -310,17 +332,19 @@ export default class Component {
         if (node.source !== rendering) {
             console.warn("Component can only be unlinked from the same context as where it is created.");
         }
-        else if (node.parent) {
-            const children = components.get(node.parent)?.children;
-            if (children?.includes(this)) {
-                children.splice(children.indexOf(this), 1);
+        else {
+            if (node.parent) {
+                const children = components.get(node.parent)?.children;
+                if (children?.includes(this)) {
+                    children.splice(children.indexOf(this), 1);
+                }
+                node.parent = null;
+                if (resolving.has(this)) {
+                    resolved.add(this);
+                    resolving.delete(this);
+                }
             }
-            node.parent = null;
-            if (rendering !== null) {
-                resolved.add(this);
-                resolving.delete(this);
-            }
-            tick(node.id, {}, 'x', null);
+            tick(this, 'x');
         }
     }
 
@@ -328,7 +352,7 @@ export default class Component {
     detach() {
         const node = components.get(this)!;
         if (node.source !== null || rendering !== null) {
-            console.warn("Component cannot be detached inside a render() call.");
+            console.warn("Component cannot be detached inside a render() context.");
         }
         else if (node.parent) {
             const children = components.get(node.parent)?.children;
@@ -336,12 +360,12 @@ export default class Component {
                 children.splice(children.indexOf(this), 1);
             }
             node.parent = null;
-            tick(node.id, {}, '-', null);
+            tick(this, '-');
         }
     }
 };
 
 export function attachRoot(cmp: Component) {
     render(cmp);
-    tick(components.get(cmp)!.id, {}, 'body', 'nn-' + toKebab(components.get(cmp)!.tag));
+    tick(cmp, 'body');
 }
