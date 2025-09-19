@@ -20,15 +20,6 @@ export default class Factory {
     constructor(root: HTMLElement) {
         // Set root element
         this.#elements.set('root', root);
-
-
-        // from here: createRoot() and sync UI
-        // elements: Map<id: int, [tag: string, className?: string, style?: Dict<Plain>, ...children: number[]]>
-        // from here: client-side elements folder for CustomElement definitions (drag, resize, lines, ...)
-        // WeakMap<customElement, [props, state, callback, ...]>
-        // WeakMap<customElement, children>
-        // WeakMap<customElement, parent>
-        // customElements should only be used for real-time interactions like dragging and swiping when sending to worker is too expensive
     }
 
     // handle messages from worker / server

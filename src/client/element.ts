@@ -1,6 +1,8 @@
 import { toKebab } from "../utils";
 
-// lifecycle callbacks for custom element
+// Lifecycle callbacks for custom element.
+// Note: custom elements should only be used for real-time interactions
+// like dragging and swiping when sending to worker is too expensive
 export default interface Callbacks {
     // called when the element is created
     created?: () => void;
