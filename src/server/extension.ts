@@ -1,5 +1,4 @@
 import { isCapatalized, toSnake } from "../utils";
-import { tick } from "./tree";
 import { getMaker } from "./component";
 import Component from "./component";
 import Entity from "./entity";
@@ -22,7 +21,7 @@ const clsMap = new Map<ComponentType | StageType | EntityType, ExtensionAPI['com
 ]);
 
 // Read-only getters for ExtensionAPI
-const api = Object.freeze({
+export const api = Object.freeze({
     ui: new Proxy(lib.ui, {
         get: function (target, prop: Uncapitalize<string>) {
             return target[prop];
@@ -76,9 +75,7 @@ function walkDefs(defs: ExtensionObject, check_only: boolean) {
     }
 }
 
-/*
- * Import an extension of <Component | Stage | Entity>.
- */
+// Import an extension of <Component | Stage | Entity>.
 export function importExtension(ext: Extension) {
     const defs = ext(api);
 
@@ -87,11 +84,4 @@ export function importExtension(ext: Extension) {
 
     // Apply definitions from the extension
     walkDefs(defs, false);
-}
-
-/**
- * Create and attach App component to root element.
- */
-export function createApp() {
-    tick(api.ui.app(), 'root');
 }

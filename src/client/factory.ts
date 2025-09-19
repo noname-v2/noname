@@ -13,25 +13,10 @@ export default class Factory {
     // all created elements (id -> HTMLElement)
     #elements = new Map<string, HTMLElement>();
 
-    constructor(src: string, root: HTMLElement) {
+    constructor(root: HTMLElement) {
         // Set root element
         this.#elements.set('root', root);
 
-        // Create a web worker to run the server code
-        const worker = new Worker(src);
-
-        worker.onerror = (e) => {
-            console.error(e);
-        };
-
-        worker.onmessage = (e) => {
-            try {
-                this.dispatch(e.data);
-            }
-            catch (error) {
-                this.reload(error);
-            }
-        };
 
         // from here: createRoot() and sync UI
         // elements: Map<id: int, [tag: string, className?: string, style?: Dict<Plain>, ...children: number[]]>
@@ -228,6 +213,15 @@ export default class Factory {
     reload(e?: unknown) {
         // TODO: reload the entire UI
         console.error('Worker error:', e);
+    }
+
+    onmessage(data: any) {
+        try {
+            this.dispatch(data);
+        }
+        catch (error) {
+            this.reload(error);
+        }
     }
 }
 

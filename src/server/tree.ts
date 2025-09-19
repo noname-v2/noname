@@ -1,4 +1,5 @@
 import { isDict, apply } from "../utils";
+import type Server from './server';
 
 // ID of the next component to be created.
 let nextId = 1;
@@ -11,6 +12,9 @@ let syncing = false;
 
 // Pending updates to be processed and sent to main thread
 let pending: Map<Component, ComponentUpdate> | null = null;
+
+// Function to send data to main thread
+let server: Server;
 
 // Component data storage
 export const components = new WeakMap<Component, ComponentNode>();
@@ -25,7 +29,11 @@ export const resolving = new Set<Component>();
 // Components already matched with a new Component from render()
 export const resolved = new Set<Component>();
 
-const stockElementProps =  new Set([
+const dimensionProps = new Set([
+    'left', 'top', 'right', 'bottom', 'width', 'height', 'aspectRatio'
+]);
+
+const stockElementProps = new Set([
     'style', 'dataset', 'className', 'innerHTML',
     'x', 'y', 'z', 'opacity',
     'scale', 'scaleX', 'scaleY', 'scaleZ',
@@ -35,9 +43,8 @@ const stockElementProps =  new Set([
 
 const stockComponentProps = new Set([
     ...stockElementProps,
-    'exclusive', 'slot',
-    'left', 'top', 'right', 'bottom',
-    'width', 'height', 'aspectRatio'
+    ...dimensionProps,
+    'exclusive', 'slot', 'aspectRatio'
 ]);
 
 // Clear references of a component and its children
@@ -74,6 +81,58 @@ function filterUpdate(update: ComponentProps, props: ComponentProps) {
     for (const key of toDelete) {
         delete update[key];
     }
+}
+
+// Convert aspect ratio to CSS style string
+function toRatioString(value: any): string {
+    if (typeof value === 'number') {
+        return value.toString();
+    }
+    if (Array.isArray(value) && value.length === 2) {
+        return `${value[0]} / ${value[1]}`;
+    }
+    if (typeof value === 'string') {
+        return value;
+    }
+    return '';
+}
+
+// Convert number, string or [number, number] to CSS style string
+function toDimensionString(value: any): string {
+    if (typeof value === 'number') {
+        return value + 'px';
+    }
+    if (Array.isArray(value) && value.length === 2) {
+        const dval = value[1] > 0 ? `+ ${value[1]}px` : `- ${-value[1]}px`;
+        return `calc(${value[0]}% ${dval})`;
+    }
+    if (typeof value === 'string') {
+        return value;
+    }
+    return '';
+}
+
+// Convert ComponentProps to ElementProps
+function propsToElement(props: ComponentProps): ElementProps {
+    const eprops = {} as any;
+    // Copy properties that do not need conversion first
+    for (const key in props) {
+        if (stockElementProps.has(key)) {
+            eprops[key] = props[key];
+        }
+    }
+    // Convert component properties to CSS styles
+    for (const key in props) {
+        const value = props[key];
+        if (dimensionProps.has(key)) {
+            eprops.style ??= {};
+            if (key in eprops.style) {
+                console.warn("Overriding existing style." + key);
+            }
+            eprops.style[key] = key === 'aspectRatio' ? toRatioString(value) : toDimensionString(value);
+        }
+    }
+    return eprops;
 }
 
 // Process pending updates and send to main thread
@@ -134,7 +193,34 @@ function sync() {
     }
 
     // Sync to main thread
+    const updates: Dict<ElementUpdate> = {};
+    for (const [cmp, update] of pending) {
+        const node = components.get(cmp)!;
+        const id = node.id;
+        if (update === 'x') {
+            // Component deleted
+            updates[id] = 'x';
+        }
+        else if (typeof update === 'string') {
+            // Component moved or created
+            updates[id] = [propsToElement(components.get(cmp)!.props), update, node.tag];
+        }
+        else if (isDict(update)) {
+            // Component properties updated
+            updates[id] = propsToElement(update);
+        }
+    }
+    server.broadcast(updates);
+
+    // Cleanup
+    pending = null;
     syncing = false;
+}
+
+// Create and attach App component to root element.
+export function createApp(api: ExtensionAPI, target: Server) {
+    server = target;
+    tick(api.ui.app(), 'root');
 }
 
 // Schedule a component update

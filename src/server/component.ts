@@ -2,6 +2,7 @@ import translate from "./locale";
 import { toKebab, isDict, apply } from "../utils";
 import { components, resolving, resolved, unsynced, tick, getRendering, ComponentNode } from './tree';
 
+// Check if a new component matches an existing one
 function matchComponent(a: ComponentNode, b: ComponentNode) {
     // Check constructor
     if (a.tag !== b.tag) {

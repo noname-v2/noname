@@ -14,6 +14,7 @@ declare global {
     // Update to an HTML element
     // key: Component ID
     // 'x': delete entire subtree
+    // `dur:${string}`: set global duration multiplier
     // ComponentProps: update properties only
     // [ComponentProps, string, string]:
     // [0]: Updated properties

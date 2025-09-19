@@ -14,8 +14,22 @@ export default class Client {
         this.createFactory('server.js');
     }
 
-    createFactory(name: string) {
-        // Create a factory that loads the given `${name}.js`
-        return new Factory(name, document.body);
+    // Create a factory with web worker or websocket 
+    createFactory(src: string) {
+        if (src.startsWith('ws://') || src.startsWith('wss://')) {
+            // TODO: remote connection via websocket
+            throw new Error('WebSocket connection not implemented yet');
+        }
+        else if (src.endsWith('.js')) {
+            // Create a web worker to run the server code
+            const worker = new Worker(src);
+            const factory = new Factory(document.body);
+            worker.onerror = e => console.error(e);
+            worker.onmessage = e => factory.onmessage(e.data);
+            return factory;
+        }
+        else {
+            throw new Error('Invalid source for client factory: ' + src);
+        }
     }
 }
