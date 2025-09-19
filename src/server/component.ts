@@ -138,7 +138,6 @@ function unresolve(cmp: Component) {
 }
 
 function render(cmp: Component) {
-    // from here: iterate over children and add all with source === rendering to unresolved
     if (rendering !== null || resolved.size || resolving.size) {
         console.warn("An component is already being rendered: " + rendering + " <- " + cmp);
         return;
@@ -158,8 +157,8 @@ function render(cmp: Component) {
     // Cleanup
     if (resolving.size || resolved.size !== n) {
         console.warn(`Unmatched components after render(): ${resolving.size} unresolved, ${resolved.size} resolved, total ${n}`);
+        resolving.clear();
     }
-    resolving.clear();
     resolved.clear();
 }
 
@@ -328,40 +327,37 @@ export default class Component {
 
     // Remove a component and clear its references.
     unlink() {
-        const node = components.get(this)!;
-        if (node.source !== rendering) {
-            console.warn("Component can only be unlinked from the same context as where it is created.");
-        }
-        else {
-            if (node.parent) {
-                const children = components.get(node.parent)?.children;
-                if (children?.includes(this)) {
-                    children.splice(children.indexOf(this), 1);
-                }
-                node.parent = null;
-                if (resolving.has(this)) {
-                    resolved.add(this);
-                    resolving.delete(this);
-                }
+        if (this.#detach()) {
+            if (resolving.has(this)) {
+                resolved.add(this);
+                resolving.delete(this);
             }
             tick(this, 'x');
-        }
+        }   
     }
 
     // Remove a component but keep its reference.
     detach() {
-        const node = components.get(this)!;
-        if (node.source !== null || rendering !== null) {
-            console.warn("Component cannot be detached inside a render() context.");
+        if (this.#detach()) {
+            tick(this, '-');
         }
-        else if (node.parent) {
+    }
+
+    // Remove reference from parent
+    #detach() {
+        const node = components.get(this)!;
+        if (node.source !== rendering) {
+            console.warn("Component can only be detached from the same context as where it is created.");
+            return false;
+        }
+        if (node.parent) {
             const children = components.get(node.parent)?.children;
             if (children?.includes(this)) {
                 children.splice(children.indexOf(this), 1);
             }
             node.parent = null;
-            tick(this, '-');
         }
+        return true;
     }
 };
 
