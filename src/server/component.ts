@@ -159,6 +159,7 @@ export default class Component {
 
                     // Remove temporary component
                     tick(target, 'x');
+                    logger.log(`Reusing component <${childNode.tag}> id=${childNode.id}`);
                     return;
                 }
             }

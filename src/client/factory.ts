@@ -213,7 +213,7 @@ export default class Factory {
 
     reload(e?: unknown) {
         // TODO: reload the entire UI
-        logger.error('Worker error:', e);
+        console.log('Worker error:', e);
     }
 
     onmessage(data: any) {

@@ -141,6 +141,7 @@ function sync() {
     if (!pending || syncing) {
         return;
     }
+    logger.log("Syncing", pending.size, "components");
     syncing = true;
 
     // Components that have already been rendered in the current sync() call
@@ -314,9 +315,9 @@ export class ComponentNode {
 
 // Mark a component and its children as resolved / unresolved
 function unresolve(cmp: Component) {
-    resolving.add(cmp);
     for (const child of components.get(cmp)!.children) {
         if (components.get(child)!.source === rendering) {
+            resolving.add(cmp);
             unresolve(child);
         }
     }
@@ -324,9 +325,10 @@ function unresolve(cmp: Component) {
 
 function render(cmp: Component) {
     if (rendering !== null || resolved.size || resolving.size) {
-        logger.warn("An component is already being rendered: " + rendering + " <- " + cmp);
+        logger.warn("An component is already being rendered: " + components.get(rendering!) + " <- " + components.get(cmp));
         return;
     }
+    logger.log("Rendering", components.get(cmp));
 
     // Setup render environment
     rendering = cmp;
@@ -345,4 +347,5 @@ function render(cmp: Component) {
         resolving.clear();
     }
     resolved.clear();
+    rendering = null;
 }

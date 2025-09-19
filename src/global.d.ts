@@ -102,5 +102,5 @@ declare global {
     type Extension = (api: ExtensionAPI) => ExtensionObject;
 
     // Argument passed to element extension module function that defines HTML element callbacks
-    type ElementExtension = (logger: Logger, callbacks: Dict<_Callbacks>) => Dict<_Callbacks>;
+    type ElementExtension = (callbacks: Dict<_Callbacks>) => Dict<_Callbacks>;
 }
