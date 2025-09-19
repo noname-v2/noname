@@ -6,7 +6,9 @@ const ext: Extension = ({ ui, components }) => ({
         render() {
             this.append(ui.zoom(
                 ui.background(),
-                ui.main(),
+                ui.main({x: 20, width: 200, height: 200, style: {
+                    backgroundColor: '#a0a0a0', borderRadius: '8px', boxShadow: '0 0 8px rgba(0,0,0,0.1)'}
+                },),
                 ui.foreground()
                 // from here: automatically add hook for stage change
                 // by capturing which stage properties are accessed during render()

@@ -47,26 +47,10 @@ class NonameElement extends HTMLElement {
     }
 }
 
-// Register the element with the given tag
-export function registerTag(tagName: string) {
-    if (!customElements.get(tagName)) {
-        const tagNameUpper = tagName.toUpperCase();
-        customElements.define(tagName, class extends NonameElement {
-            static get observedAttributes() {
-                return extensionCallbacks.get(tagNameUpper)?.observedAttributes
-                    || stockCallbacks.get(tagNameUpper)?.observedAttributes
-                    || [];
-            }
-        });
-    }
-}
-
 // Define custom callbacks for the given tag
 export function registerElement(tag: string, callbacks: Callbacks, isExtension = false) {
     const tagName = ('nn-' + toKebab(tag));
     const tagNameUpper = tagName.toUpperCase();
-
-    registerTag(tagName);
 
     if (isExtension) {
         extensionCallbacks.set(tagNameUpper, callbacks);
@@ -78,8 +62,15 @@ export function registerElement(tag: string, callbacks: Callbacks, isExtension =
 
 // Create a new element
 export function createElement(tagName: string) {
-    if (tagName.startsWith('nn-')) {
-        registerTag(tagName);
+    if (tagName.startsWith('nn-') && !customElements.get(tagName)) {
+        const tagNameUpper = tagName.toUpperCase();
+        customElements.define(tagName, class extends NonameElement {
+            static get observedAttributes() {
+                return extensionCallbacks.get(tagNameUpper)?.observedAttributes
+                    || stockCallbacks.get(tagNameUpper)?.observedAttributes
+                    || [];
+            }
+        });
     }
     return document.createElement(tagName);
 }

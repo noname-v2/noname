@@ -77,6 +77,14 @@ export default class Component {
         }
     }) as ComponentProps;
 
+    // Default CSS styles
+    static get css() {
+        return {
+            display: 'block',
+            position: 'absolute'
+        };
+    }
+
     // Whether the component is a native DOM element or prefixed with `nn-`
     get native() {
         return false;

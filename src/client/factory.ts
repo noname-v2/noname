@@ -3,6 +3,9 @@ import { isDict, apply } from "../utils";
 import { createElement } from "./element";
 
 export default class Factory {
+    // CSS style sheet
+    #style = document.createElement('style');
+
     // global transition duration multiplier
     #global_duration = 300; // ms
 
@@ -29,7 +32,7 @@ export default class Factory {
     }
 
     // handle messages from worker / server
-    dispatch(ticks: Dict<ElementUpdate>) {
+    dispatch(ticks: ElementTick) {
         const toAdd = new Map<string, [string, string]>(); // id -> [parent id, tag name] for new / moved elements
         const toUpdate = new Map<string, ElementProps>(); // id -> updated properties
         const toUnlink = new Set<string>(); // ids to be removed
@@ -37,7 +40,15 @@ export default class Factory {
         // determine the type of each tick
         for (const id in ticks) {
             const tick = ticks[id];
-            if (typeof tick === 'string') {
+            if (id === 'dur') {
+                if (typeof tick === 'number' && !isNaN(tick) && tick < 5000 && tick > 0) {
+                    this.#global_duration = tick;
+                }
+            }
+            else if (id === 'css') {
+                // from here: static CSS styles for Component class
+            }
+            else if (typeof tick === 'string') {
                 // Predefined actions
                 if (tick === 'x') {
                     // delete entire subtree
@@ -48,12 +59,6 @@ export default class Factory {
                         logger.warn('Removing detached element', id);
                         this.#elements.get(id)!.remove();
                         this.#elements.delete(id);
-                    }
-                }
-                else if (tick.startsWith('dur:')) {
-                    const duration = parseInt(tick.slice(4), 10);
-                    if (!isNaN(duration) && duration < 5000 && duration >= 0) {
-                        this.#global_duration = duration;
                     }
                 }
             }
@@ -223,6 +228,11 @@ export default class Factory {
         catch (error) {
             this.reload(error);
         }
+    }
+
+    close() {
+        this.#style.remove();
+        this.#elements.get('root')?.remove();
     }
 }
 

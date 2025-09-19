@@ -23,6 +23,12 @@ declare global {
     // [2]: HTML element tag
     type ElementUpdate = 'x' | `dur:${string}` | ElementProps | [ElementProps, string, string];
 
+    interface ElementTick {
+        dur?: number; // global duration multiplier
+        css?: CSSDict[]; // global CSS styles
+        [key: string]: ElementUpdate;
+    }
+
     // UI updates pending to be sent to main thread
     // key: Component ID
     // string: Parent component ID of new / moved component, '-' if detached, 'x' if unlinked

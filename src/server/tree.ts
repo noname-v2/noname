@@ -45,7 +45,7 @@ const stockElementProps = new Set([
 const stockComponentProps = new Set([
     ...stockElementProps,
     ...dimensionProps,
-    'exclusive', 'slot', 'aspectRatio'
+    'exclusive', 'slot'
 ]);
 
 // Clear references of a component and its children
@@ -195,7 +195,7 @@ function sync() {
     }
 
     // Sync to main thread
-    const updates: Dict<ElementUpdate> = {};
+    const updates: ElementTick = {};
     for (const [cmp, update] of pending) {
         const node = components.get(cmp)!;
         const id = node.id;
