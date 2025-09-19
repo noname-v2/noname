@@ -1,4 +1,5 @@
-import { isCapatalized, toKebab, toSnake } from "../utils";
+import { isCapatalized, toSnake } from "../utils";
+import { tick } from "./tree";
 import { getMaker } from "./component";
 import Component from "./component";
 import Entity from "./entity";
@@ -54,7 +55,7 @@ function walkDefs(defs: ExtensionObject, check_only: boolean) {
         const cls = defs[name];
 
         // select the correct destination from lib for extension-defined class
-        for (const [libCls, dict] of clsMap.entries()) {
+        for (const [libCls, dict] of clsMap) {
             if (cls.prototype instanceof libCls) {
                 if (check_only) {
                     if (name in dict && !(cls.prototype instanceof dict[name])) {
@@ -66,7 +67,7 @@ function walkDefs(defs: ExtensionObject, check_only: boolean) {
                     dict[name] = cls;
                     if (libCls === Component) {
                         // method to create child components inside Component.render(), e.g. ui.app()
-                        lib.ui[toSnake(name)] = getMaker(toKebab(name), cls as ComponentType, api.ui);
+                        lib.ui[toSnake(name)] = getMaker(name, cls as ComponentType, api.ui);
                     }
                 }
                 break;
@@ -86,4 +87,11 @@ export function importExtension(ext: Extension) {
 
     // Apply definitions from the extension
     walkDefs(defs, false);
+}
+
+/**
+ * Create and attach App component to document.body.
+ */
+export function createApp() {
+    tick(api.ui.app(), 'body');
 }

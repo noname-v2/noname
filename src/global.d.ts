@@ -30,7 +30,7 @@ declare global {
     // Properties for client Factory to process
     interface ElementProps {
         style?: CSSDict; // HTML element CSS style
-        dataset?: Dict; // HTML element dataset
+        dataset?: Dict<string>; // HTML element dataset
         className?: string; // HTML element class name
         innerHTML?: string; // innerHTML of the component, no other children allowed if set
         x?: number;
