@@ -90,8 +90,8 @@ export function importExtension(ext: Extension) {
 }
 
 /**
- * Create and attach App component to document.body.
+ * Create and attach App component to root element.
  */
 export function createApp() {
-    tick(api.ui.app(), 'body');
+    tick(api.ui.app(), 'root');
 }

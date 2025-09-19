@@ -20,12 +20,16 @@ for src in build/platforms/*; do
   fi
   mkdir -p dist/$(basename "$src")
 
-  # Rollup main thread and worker thread
-  rollup "$src"/index.js --file dist/$(basename "$src")/index.js --format iife
-  rollup "$src"/server.js --file dist/$(basename "$src")/server.js --format iife
+  # Copy initialization code for client and server
+  cp build/client/index.js "$src"/_client.js
+  cp build/server/index.js "$src"/_server.js
 
   # Copy platform-specific files e.g. Electron's main.js
-  find "$src" -type f -not -name "index.js" -not -name "server.js" -exec cp {} dist/$(basename "$src")/ \;
+  find "$src" -type f -not -name "_*.js" -exec cp {} dist/$(basename "$src")/ \;
+
+  # Rollup client and server entrypoints
+  rollup "$src"/_client.js --file dist/$(basename "$src")/client.js --format iife
+  rollup "$src"/_server.js --file dist/$(basename "$src")/server.js --format iife
 
   # Link assets and copy static files
   ln -sf ../../assets dist/$(basename "$src")/assets

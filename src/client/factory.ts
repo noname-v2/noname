@@ -7,13 +7,17 @@ export default class Factory {
 
     // parent, children and properties of each element, '-' for detached or root elements
     #tree = new Map<string, { parent: string, children: Set<string>, props: ElementProps }>(
-        [['body', { parent: '-', children: new Set(), props: {} }]]
+        [['root', { parent: '-', children: new Set(), props: {} }]]
     );
 
     // all created elements (id -> HTMLElement)
-    #elements = new Map<string, HTMLElement>([['body', document.body]]);
+    #elements = new Map<string, HTMLElement>();
 
-    constructor(src: string) {
+    constructor(src: string, root: HTMLElement) {
+        // Set root element
+        this.#elements.set('root', root);
+
+        // Create a web worker to run the server code
         const worker = new Worker(src);
 
         worker.onerror = (e) => {

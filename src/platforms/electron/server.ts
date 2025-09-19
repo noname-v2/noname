@@ -1,4 +1,5 @@
-import Server from '../../server/server';
+import Base from '../../server/server';
 
-const server = new Server();
-server.start();
+export default class Server extends Base {
+
+}

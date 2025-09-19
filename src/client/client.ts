@@ -10,12 +10,12 @@ for (const ext of elements) {
 }
 
 export default class Client {
-    registerFS() {
-        // Register the file system
+    start() {
+        this.createFactory('server.js');
     }
 
     createFactory(name: string) {
         // Create a factory that loads the given `${name}.js`
-        return new Factory(name);
+        return new Factory(name, document.body);
     }
 }
