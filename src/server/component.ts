@@ -115,6 +115,7 @@ export default class Component {
     // Append a component to its children.
     append(target: Component) {
         const node = components.get(this)!;
+        const rendering = getRendering();
 
         if (node.props.innerHTML !== null && node.props.innerHTML !== undefined && node.props.innerHTML !== "") {
             console.warn("Component cannot have both innerHTML and children, skipping append().");
@@ -124,7 +125,7 @@ export default class Component {
         const targetNode = components.get(target)!;
 
         if (targetNode.parent) {
-            if (targetNode.source !== getRendering()) {
+            if (targetNode.source !== rendering) {
                 console.warn("Component can only be moved from the same context as where it is created.", node, targetNode);
                 return;
             }
@@ -135,7 +136,7 @@ export default class Component {
             }
         }
 
-        if (getRendering() !== null) {
+        if (rendering !== null) {
             // Match existing child if possible (only in a render() context)
             for (const child of node.children) {
                 const childNode = components.get(child)!;
@@ -146,7 +147,7 @@ export default class Component {
 
                     // match child elements
                     for (const targetChild of targetNode.children) {
-                        if (components.get(targetChild)?.source === getRendering()) {
+                        if (components.get(targetChild)?.source === rendering) {
                             child.append(targetChild);
                         }
                     }

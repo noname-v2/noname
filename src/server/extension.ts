@@ -24,6 +24,9 @@ const clsMap = new Map<ComponentType | StageType | EntityType, ExtensionAPI['com
 export const api = Object.freeze({
     ui: new Proxy(lib.ui, {
         get: function (target, prop: Uncapitalize<string>) {
+            if (!(prop in target)) {
+                target[prop] = getMaker(prop, Component, api.ui);
+            }
             return target[prop];
         }
     }),
