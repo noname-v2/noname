@@ -10,6 +10,19 @@ const ext: Extension = ({ Component }) => ({
             margin: '0',
             padding: '0'
         };
+    },
+    Background: class extends Component {
+        static mixin = ['layer'];
+    },
+    Main: class extends Component {
+        static mixin = ['layer'];
+    },
+    Foreground: class extends Component {
+        static mixin = ['layer'];
+    },
+    Body: class extends Component {
+        static native = true;
+        static mixin = ['layer'];
     }
 });
 

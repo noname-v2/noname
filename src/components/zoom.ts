@@ -1,6 +1,5 @@
 const ext: Extension = ({ Component }) => ({
-    Body: class extends Component {
-        static native = true;
+    Zoom: class extends Component {
         static mixin = ['layer'];
     }
 });

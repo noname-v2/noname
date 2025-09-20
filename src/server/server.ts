@@ -95,6 +95,13 @@ export default class Server {
                 selector += `,${toSelector(m)}`;
             });
             styles[selector] = css[tagName];
+
+            // Fill default styles from Component.css
+            for (const m in Component.css) {
+                if (!(m in styles[selector])) {
+                    (styles as any)[selector][m] = (Component as any).css[m];
+                }
+            }
         }
 
         // Send CSS styles to clients

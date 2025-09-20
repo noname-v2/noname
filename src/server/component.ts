@@ -96,8 +96,7 @@ export default class Component {
     // Default CSS styles
     static css: CSSDict = {
         display: 'block',
-        position: 'absolute',
-        '& div': {display: 'inline'}
+        position: 'absolute'
     };
 
     // Mixin the static css property of other components
