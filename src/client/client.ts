@@ -2,16 +2,15 @@ import Factory from "./factory";
 import elements from '../build/elements';
 import { registerElement } from "./element";
 
-for (const ext of elements) {
-    const defs = ext({});
-    for (const key in defs) {
-        registerElement(key, defs[key], true);
-    }
-}
-
 export default class Client {
     start() {
-        this.createFactory('server.js');
+        const factory = this.createFactory('server.js');
+        for (const ext of elements) {
+            const defs = ext({});
+            for (const key in defs) {
+                registerElement(key, defs[key], factory);
+            }
+        }
     }
 
     // Create a factory with web worker or websocket 

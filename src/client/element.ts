@@ -1,4 +1,5 @@
 import { toKebab } from "../utils";
+import type Factory from "./factory";
 
 // Lifecycle callbacks for custom element.
 // Note: custom elements should only be used for real-time interactions
@@ -20,46 +21,51 @@ export default interface Callbacks {
     observedAttributes?: string[];
 }
 
-// built-in custom element callbacks
-const stockCallbacks = new Map<string, Callbacks>();
+// Callbacks grouped by factory context
+const factories: Factory[] = [];
+const factoryCallbacks: Map<string, Callbacks>[] = [];
 
-// extension-defined custom element callbacks (higher priority than system, but clears when game changes)
-const extensionCallbacks = new Map<string, Callbacks>();
+// Get the callback function with custom callbacks (registered later) having higher priority
+function getCallback(tagName: string, method: keyof Callbacks): any {
+    for (let i = factories.length - 1; i >= 0; i--) {
+        const func = factoryCallbacks[i].get(tagName)?.[method];
+        if (func) {
+            return func;
+        }
+    }
+    return null;
+}
 
 class NonameElement extends HTMLElement {
     constructor() {
         super();
-        (extensionCallbacks.get(this.tagName)?.created
-            || stockCallbacks.get(this.tagName)?.created)?.call(this);
+        getCallback(this.tagName, 'created')?.call(this);
     }
 
     connectedCallback() {
-        (extensionCallbacks.get(this.tagName)?.connected
-            || stockCallbacks.get(this.tagName)?.connected)?.call(this);
+        getCallback(this.tagName, 'connected')?.call(this);
     }
 
     disconnectedCallback() {
-        (extensionCallbacks.get(this.tagName)?.disconnected
-            || stockCallbacks.get(this.tagName)?.disconnected)?.call(this);
+        getCallback(this.tagName, 'disconnected')?.call(this);
     }
 
     attributeChangedCallback(name: string, oldValue: string, newValue: string) {
-        (extensionCallbacks.get(this.tagName)?.attributeChanged
-            || stockCallbacks.get(this.tagName)?.attributeChanged)?.call(this, name, oldValue, newValue);
+        getCallback(this.tagName, 'attributeChanged')?.apply(this, [name, oldValue, newValue]);
     }
 }
 
 // Define custom callbacks for the given tag
-export function registerElement(tag: string, callbacks: Callbacks, isExtension = false) {
+export function registerElement(tag: string, callbacks: Callbacks, factory: Factory) {
     const tagName = ('nn-' + toKebab(tag));
     const tagNameUpper = tagName.toUpperCase();
-
-    if (isExtension) {
-        extensionCallbacks.set(tagNameUpper, callbacks);
+    let index = factories.indexOf(factory);
+    if (index === -1) {
+        index = factories.length;
+        factories.push(factory);
+        factoryCallbacks.push(new Map<string, Callbacks>());
     }
-    else {
-        stockCallbacks.set(tagNameUpper, callbacks);
-    }
+    factoryCallbacks[index].set(tagNameUpper, callbacks);
 }
 
 // Create a new element
@@ -68,9 +74,7 @@ export function createElement(tagName: string) {
         const tagNameUpper = tagName.toUpperCase();
         customElements.define(tagName, class extends NonameElement {
             static get observedAttributes() {
-                return extensionCallbacks.get(tagNameUpper)?.observedAttributes
-                    || stockCallbacks.get(tagNameUpper)?.observedAttributes
-                    || [];
+                return getCallback(tagNameUpper, 'observedAttributes') || [];
             }
         });
     }
