@@ -26,7 +26,7 @@ function matchComponent(a: ComponentNode, b: ComponentNode) {
 export function getMaker(tag: string, cls: ComponentType, ui: ExtensionAPI['ui']): ComponentMaker {
     return (...args) => {
         const cmp = new cls();
-        const node = new ComponentNode(toKebab(tag));
+        const node = new ComponentNode((cls.native ? 'nn-' : '') + toKebab(tag));
         components.set(cmp, node);
         unsynced.add(cmp);
         tick(cmp, '-')
@@ -78,17 +78,13 @@ export default class Component {
     }) as ComponentProps;
 
     // Default CSS styles
-    static get css() {
-        return {
-            display: 'block',
-            position: 'absolute'
-        };
-    }
+    static css: Dict = {
+        display: 'block',
+        position: 'absolute'
+    };
 
     // Whether the component is a native DOM element or prefixed with `nn-`
-    get native() {
-        return false;
-    }
+    static native = false;
 
     // Component properties getter
     get props() {

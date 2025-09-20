@@ -1,8 +1,9 @@
 /*
  * App component.
  */
-const ext: Extension = ({ ui, components }) => ({
-    App: class extends components.Component {
+const ext: Extension = ({ ui, Component }) => ({
+    App: class extends Component {
+        static css = {};
         render() {
             this.append(ui.zoom(
                 ui.background(),

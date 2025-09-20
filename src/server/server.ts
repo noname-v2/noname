@@ -19,7 +19,7 @@ export default class Server {
     #state = new Entity();
 
     // API object passed to extension modules
-    #api = Object.freeze({
+    #api: ExtensionAPI = Object.freeze({
         ui: new Proxy(this.#ui, {
             get: (target, prop: Uncapitalize<string>) => {
                 if (!(prop in target)) {
@@ -44,7 +44,10 @@ export default class Server {
             }
         }),
         state: this.#state.createProxy(),
-        logger
+        logger,
+        Component,
+        Stage,
+        Entity
     });
 
     // Connected clients
@@ -61,6 +64,7 @@ export default class Server {
         createRoot(this.#api.ui.app(), this);
 
         // Gather CSS styles from all components
+
     }
 
     // Send data to a client

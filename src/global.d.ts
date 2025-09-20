@@ -97,6 +97,9 @@ declare global {
         entities: { [key: Capitalize<string>]: EntityType; };
         state: Dict<EntityData>;
         logger: Logger;
+        Component: ComponentType;
+        Stage: StageType;
+        Entity: EntityType;
     }
 
     // Return value of extension module function
