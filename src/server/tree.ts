@@ -219,10 +219,10 @@ function sync() {
     syncing = false;
 }
 
-// Create and attach App component to root element.
-export function createApp(api: ExtensionAPI, target: Server) {
+// Attach component to root element.
+export function createRoot(cmp: Component, target: Server) {
     server = target;
-    tick(api.ui.app(), 'root');
+    tick(cmp, 'root');
 }
 
 // Schedule a component update

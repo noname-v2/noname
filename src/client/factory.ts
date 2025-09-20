@@ -38,6 +38,7 @@ export default class Factory {
             }
             else if (id === 'css') {
                 // from here: static CSS styles for Component class
+
             }
             else if (typeof tick === 'string') {
                 // Predefined actions
@@ -194,7 +195,6 @@ export default class Factory {
             apply(el.style, props.style);
         }
         // from here: actually update styles by ElementProps
-        logger.log(this.#global_duration);
     }
 
     // update the style of an element
@@ -205,6 +205,7 @@ export default class Factory {
             apply(el.style, props.style);
         }
         // from here: actually update styles by ElementProps
+        logger.log(this.#global_duration);
     }
 
     reload(e?: unknown) {
@@ -226,27 +227,3 @@ export default class Factory {
         this.#elements.get('root')?.remove();
     }
 }
-
-
-// Useful lifecycle callback methods in a custom element (extending HTMLElement) include:
-
-// connectedCallback()
-// Called each time the element is inserted into the DOM.
-
-// Ideal for setup tasks like rendering, fetching resources, or adding event listeners.
-
-// Similar to React’s componentDidMount.
-
-// disconnectedCallback()
-// Called each time the element is removed from the DOM.
-
-// Use it to clean up event listeners, stop timers, or release resources.
-
-// Similar to React’s componentWillUnmount.
-
-// attributeChangedCallback(name, oldValue, newValue)
-// Called whenever one of the element’s observed attributes changes.
-
-// To use this, define a static observedAttributes array listing attribute names to watch.
-
-// Useful for responding to changes in element attributes dynamically.
