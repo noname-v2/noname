@@ -2,9 +2,9 @@ import stages from '../build/stages';
 import components from '../build/components';
 import entities from '../build/entities';
 
-import { createRoot } from './tree';
-import { isCapatalized, toSnake } from "../utils";
-import { getMaker } from "./component";
+import { createRoot, config } from './tree';
+import { isCapatalized, toKebab, toSnake } from "../utils";
+import { getMaker, toCSS } from "./component";
 import Component from "./component";
 import Entity from "./entity";
 import Stage from "./stage";
@@ -55,16 +55,52 @@ export default class Server {
 
     // Start the server
     start() {
+        // Load built-in extensions
         stages.forEach(ext => this.importExtension(ext));
         components.forEach(ext => this.importExtension(ext));
         entities.forEach(ext => this.importExtension(ext));
 
+        // Initialize the root stage and component
         logger.log('Server started');
         this.createClient('self');
         createRoot(this.#api.ui.app(), this);
+        // from here: init stages, load state, etc.
 
-        // Gather CSS styles from all components
+        const css: Dict<CSSDict> = {}; // styles from static css property
+        const mixin: Dict<Set<string>> = {}; // mixin group name from static mixin property
+        const native: Dict<boolean> = {}; // whether to add 'nn-' prefix to final tag name
+        const styles: Dict<CSSDict> = {}; // combined css and mixins
 
+        // Gather styles from all components by tag name
+        for (const name in this.#components) {
+            const cls = this.#components[name as Capitalize<string>];
+            const tagName = toKebab(name);
+            native[tagName] = cls.native;
+            if (cls.css) {
+                css[tagName] = cls.css;
+            }
+            cls.mixin?.forEach(m => {
+                if (!mixin[m]) {
+                    mixin[m] = new Set();
+                }
+                mixin[m].add(tagName);
+            });
+        }
+
+        // Combine css and mixins into final styles
+        const toSelector = (tag: string) => (native[tag] ? '' : 'nn-') + toKebab(tag);
+        for (const tagName in css) {
+            let selector = toSelector(tagName);
+            mixin[tagName]?.forEach(m => {
+                selector += `,${toSelector(m)}`;
+            });
+            styles[selector] = css[tagName];
+        }
+
+        // Send CSS styles to clients
+        const styleString = toCSS(styles);
+        logger.log(styleString);
+        config({'css': styleString});
     }
 
     // Send data to a client
@@ -88,10 +124,8 @@ export default class Server {
     // Import an extension of <Component | Stage | Entity>.
     importExtension(ext: Extension) {
         const defs = ext(this.#api);
-
         // Check duplicate definition before applying any changes
         this.#walkDefs(defs, true);
-
         // Apply definitions from the extension
         this.#walkDefs(defs, false);
     }

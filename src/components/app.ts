@@ -4,6 +4,7 @@
 const ext: Extension = ({ ui, Component }) => ({
     App: class extends Component {
         static css = {};
+        static mixin = ['layer'];
         render() {
             this.append(ui.zoom(
                 ui.background(),

@@ -10,22 +10,24 @@ declare global {
     type Dict<T=Plain> = {[key: string]: T};
 
     // CSS declaration
-    type CSSDict = Partial<CSSStyleDeclaration>;
+    type CSSDict = Partial<CSSStyleDeclaration> | { [key: string]: CSSDict };
 
     // Update to an HTML element
     // key: Component ID
     // 'x': delete entire subtree
-    // `dur:${string}`: set global duration multiplier
     // ComponentProps: update properties only
     // [ComponentProps, string, string]:
     // [0]: Updated properties
     // [1]: Parent component ID, '-' if detached
     // [2]: HTML element tag
-    type ElementUpdate = 'x' | `dur:${string}` | ElementProps | [ElementProps, string, string];
+    type ElementUpdate = 'x' | ElementProps | [ElementProps, string, string];
 
-    interface ElementTick {
+    interface ConfigUpdate {
         dur?: number; // global duration multiplier
-        css?: CSSDict[]; // global CSS styles
+        css?: string; // global CSS styles
+    }
+
+    interface ClientUpdate extends ConfigUpdate {
         [key: string]: ElementUpdate;
     }
 

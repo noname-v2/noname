@@ -20,10 +20,13 @@ export default class Factory {
     constructor(root: HTMLElement) {
         // Set root element
         this.#elements.set('root', root);
+
+        // Add style element to document head
+        document.head.appendChild(this.#style);
     }
 
     // handle messages from worker / server
-    dispatch(ticks: ElementTick) {
+    dispatch(ticks: ClientUpdate) {
         const toAdd = new Map<string, [string, string]>(); // id -> [parent id, tag name] for new / moved elements
         const toUpdate = new Map<string, ElementProps>(); // id -> updated properties
         const toUnlink = new Set<string>(); // ids to be removed
@@ -37,8 +40,7 @@ export default class Factory {
                 }
             }
             else if (id === 'css') {
-                // from here: static CSS styles for Component class
-
+                this.#style.innerHTML = tick as string;
             }
             else if (typeof tick === 'string') {
                 // Predefined actions

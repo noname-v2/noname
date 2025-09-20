@@ -195,7 +195,7 @@ function sync() {
     }
 
     // Sync to main thread
-    const updates: ElementTick = {};
+    const updates: ClientUpdate = {};
     for (const [cmp, update] of pending) {
         const node = components.get(cmp)!;
         const id = node.id;
@@ -223,6 +223,11 @@ function sync() {
 export function createRoot(cmp: Component, target: Server) {
     server = target;
     tick(cmp, 'root');
+}
+
+// Send a config update
+export function config(update: ConfigUpdate) {
+    server.broadcast(update);
 }
 
 // Schedule a component update

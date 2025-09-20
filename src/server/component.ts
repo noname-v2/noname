@@ -22,11 +22,27 @@ function matchComponent(a: ComponentNode, b: ComponentNode) {
     return true;
 }
 
+// Convert a CSSDict to a CSS string
+export function toCSS(cssDict: CSSDict): string {
+    let cssString = '';
+    for (const key in cssDict) {
+        const value = (cssDict as Dict<CSSDict>)[key];
+        if (typeof value === 'string' || typeof value === 'number') {
+            const prop = key.replace(/[A-Z]/g, m => '-' + m.toLowerCase());
+            cssString += `${prop}:${value};`;
+        }
+        else if (isDict(value)) {
+            cssString += `${key}{${toCSS(value)}}`;
+        }
+    }
+    return cssString;
+}
+
 // Create a function for making component instances
 export function getMaker(tag: string, cls: ComponentType, ui: ExtensionAPI['ui']): ComponentMaker {
     return (...args) => {
         const cmp = new cls();
-        const node = new ComponentNode((cls.native ? 'nn-' : '') + toKebab(tag));
+        const node = new ComponentNode((cls.native ? '' : 'nn-') + toKebab(tag));
         components.set(cmp, node);
         unsynced.add(cmp);
         tick(cmp, '-')
@@ -78,10 +94,14 @@ export default class Component {
     }) as ComponentProps;
 
     // Default CSS styles
-    static css: Dict = {
+    static css: CSSDict = {
         display: 'block',
-        position: 'absolute'
+        position: 'absolute',
+        '& div': {display: 'inline'}
     };
+
+    // Mixin the static css property of other components
+    static mixin: string[] = [];
 
     // Whether the component is a native DOM element or prefixed with `nn-`
     static native = false;
