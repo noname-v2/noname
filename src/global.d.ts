@@ -56,14 +56,14 @@ declare global {
         rotateY?: number;
         rotateZ?: number;
         transition?: number // transition duration (value x global_duration) for properties change
-        click?: boolean; // whether to listen to click event
         down?: boolean; // whether to add a temporary .down class when clicking or dragging
+        click?: boolean; // whether to listen to click event
         // drag?: boolean; // whether to listen to drag event
         // contextmenu?: boolean; // whether to listen to contextmenu event
     }
 
     // Callback for click events
-    type ClickCallback = (type?: 'right' | 'double' | null) => void;
+    type ClickCallback = (type: 'right' | 'double' | null = null) => void;
 
     // Properties for server sync() to process into ElementProps
     interface ComponentProps extends ElementProps {
@@ -76,7 +76,7 @@ declare global {
         width?: number | null;
         height?: number | null;
         aspectRatio?: number | null;
-        onclick?: ClickCallback; // click event handler
+        onClick?: string; // click event handler
         [key: string]: Plain; // other properties passed to the component (trigger re-render on change)
     }
 
@@ -121,5 +121,6 @@ declare global {
     type Extension = (api: ExtensionAPI) => ExtensionObject;
 
     // Argument passed to element extension module function that defines HTML element callbacks
-    type ElementExtension = (callbacks: Dict<_Callbacks>) => Dict<_Callbacks>;
+    interface ElementAPI extends Dict<_Callbacks> { logger: Logger }
+    type ElementExtension = (api: ElementAPI) => Dict<_Callbacks>;
 }

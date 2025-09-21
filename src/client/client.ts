@@ -1,12 +1,13 @@
 import Factory from "./factory";
 import elements from '../build/elements';
+import logger from '../logger';
 import { registerElement } from "./element";
 
 export default class Client {
     start() {
         const factory = this.createFactory('server.js');
         for (const ext of elements) {
-            const defs = ext({});
+            const defs = ext({ logger});
             for (const key in defs) {
                 registerElement(key, defs[key], factory);
             }

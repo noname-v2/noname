@@ -19,10 +19,9 @@ const ext: Extension = ({ Component }) => ({
     },
     Foreground: class extends Component {
         static mixin = ['layer'];
-    },
-    Body: class extends Component {
-        static native = true;
-        static mixin = ['layer'];
+        static css = {
+            pointerEvents: 'none' // make sure foreground does not block interactions
+        };
     }
 });
 

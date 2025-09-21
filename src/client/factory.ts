@@ -204,8 +204,31 @@ export default class Factory {
     init(id: string) {
         const props = this.#tree.get(id)!.props;
         const el = this.#elements.get(id)!;
+
+        // Apply initial properties
         if (props?.style) {
             apply(el.style, props.style);
+        }
+        if (props?.className) {
+            el.className = props.className;
+        }
+        if (props?.dataset) {
+            for (const key in props.dataset) {
+                el.dataset[key] = props.dataset[key];
+            }
+        }
+        if (typeof props?.innerHTML === 'string') {
+            el.innerHTML = props.innerHTML;
+        }
+
+        // Bind click event
+        if (props?.click) {
+            el.style.cursor = 'pointer';
+            el.onclick = (e) => {
+                logger.log('Element clicked:', id);
+                e.stopPropagation();
+                this.#send({ click: id });
+            };
         }
         // from here: actually update styles by ElementProps
     }
@@ -227,7 +250,7 @@ export default class Factory {
 
     reload(e?: unknown) {
         // TODO: reload the entire UI
-        console.log('Worker error:', e);
+        logger.error('Worker error:', e);
     }
 
     onmessage(data: any) {

@@ -30,22 +30,22 @@ export const resolving = new Set<Component>();
 // Components already matched with a new Component from render()
 export const resolved = new Set<Component>();
 
-const dimensionProps = new Set([
+const dimensionPropKeys = new Set([
     'left', 'top', 'right', 'bottom', 'width', 'height', 'aspectRatio'
 ]);
 
-const stockElementProps = new Set([
+const elementPropKeys = new Set([
     'style', 'dataset', 'className', 'innerHTML',
     'x', 'y', 'z', 'opacity',
     'scale', 'scaleX', 'scaleY', 'scaleZ',
     'rotate', 'rotateX', 'rotateY', 'rotateZ',
-    'transition'
+    'transition', 'down'
 ]);
 
-const stockComponentProps = new Set([
-    ...stockElementProps,
-    ...dimensionProps,
-    'exclusive', 'slot'
+const componentPropKeys = new Set([
+    ...elementPropKeys,
+    ...dimensionPropKeys,
+    'exclusive', 'slot', 'onClick'
 ]);
 
 // Clear references of a component and its children
@@ -116,21 +116,27 @@ function toDimensionString(value: any): string {
 // Convert ComponentProps to ElementProps
 function propsToElement(props: ComponentProps): ElementProps {
     const eprops = {} as any;
+    
     // Copy properties that do not need conversion first
     for (const key in props) {
-        if (stockElementProps.has(key)) {
+        if (elementPropKeys.has(key)) {
             eprops[key] = props[key];
         }
     }
-    // Convert component properties to CSS styles
+
     for (const key in props) {
         const value = props[key];
-        if (dimensionProps.has(key)) {
+        if (dimensionPropKeys.has(key)) {
+            // Convert component properties to CSS styles
             eprops.style ??= {};
             if (key in eprops.style) {
                 logger.warn("Overriding existing style." + key);
             }
             eprops.style[key] = key === 'aspectRatio' ? toRatioString(value) : toDimensionString(value);
+        }
+        else if (key === 'onClick' && typeof props[key] === 'string') {
+            // Convert onClick property to click event listener
+            eprops.click = true;
         }
     }
     return eprops;
@@ -174,7 +180,7 @@ function sync() {
 
                 // Render component if there are custom properties to update
                 for (const key in update) {
-                    if (!stockComponentProps.has(key)) {
+                    if (!componentPropKeys.has(key)) {
                         toRender.add(cmp);
                         break;
                     }
@@ -277,29 +283,6 @@ export function tick(cmp: Component, update: ComponentUpdate) {
 export function getRendering() {
     return rendering;
 }
-
-// // Default component layout properties
-// const defaultLayout = {
-//     opacity: 1,
-//     x: 0,
-//     y: 0,
-//     z: 0,
-//     scale: 1,
-//     scaleX: 1,
-//     scaleY: 1,
-//     scaleZ: 1,
-//     rotate: 0,
-//     rotateX: 0,
-//     rotateY: 0,
-//     rotateZ: 0,
-//     left: null,
-//     top: null,
-//     right: null,
-//     bottom: null,
-//     width: null,
-//     height: null,
-//     aspectRatio: null
-// };
 
 // Data wrapper for component properties
 export class ComponentNode {
