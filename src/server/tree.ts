@@ -309,6 +309,7 @@ export class ComponentNode {
     parent: Component | null = null; // Parent component
     source: Component | null = rendering; // Source component with the render() method that creates this component
     props: ComponentProps = {}; // Component data
+    onclick: ClickCallback | null = null; // Click event handler
 
     constructor(tag: string) {
         this.tag = tag;

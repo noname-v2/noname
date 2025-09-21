@@ -96,7 +96,8 @@ export default class Component {
     // Default CSS styles
     static css: CSSDict = {
         display: 'block',
-        position: 'absolute'
+        position: 'absolute',
+		transformOrigin: 'top left'
     };
 
     // Mixin the static css property of other components
@@ -138,7 +139,14 @@ export default class Component {
     }
 
     // Append a component to its children.
-    append(target: Component) {
+    append(...targets: Component[]) {
+        for (const target of targets) {
+            this.#append(target);
+        }
+    }
+
+    // Append a component to its children (single target).
+    #append(target: Component) {
         const node = components.get(this)!;
         const rendering = getRendering();
 

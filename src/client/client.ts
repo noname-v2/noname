@@ -22,7 +22,7 @@ export default class Client {
         else if (src.endsWith('.js')) {
             // Create a web worker to run the server code
             const worker = new Worker(src);
-            const factory = new Factory(document.body);
+            const factory = new Factory(document.body, (msg: any) => worker.postMessage(msg));
             worker.onerror = e => console.log(e);
             worker.onmessage = e => factory.onmessage(e.data);
             return factory;

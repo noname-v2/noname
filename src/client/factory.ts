@@ -14,15 +14,26 @@ export default class Factory {
         [['root', { parent: '-', children: new Set(), props: {} }]]
     );
 
-    // all created elements (id -> HTMLElement)
+    // Reference width and height of root element
+    #refWidth = 960;
+    #refHeight = 540;
+
+    // Function to send messages to worker / server
+    #send: (msg: any) => void;
+
+    // All created elements (id -> HTMLElement)
     #elements = new Map<string, HTMLElement>();
 
-    constructor(root: HTMLElement) {
-        // Set root element
+    constructor(root: HTMLElement, send: (msg: any) => void) {
+        // Set root element and sender
         this.#elements.set('root', root);
+        this.#send = send;
 
         // Add style element to document head
         document.head.appendChild(this.#style);
+
+        // Initialize the size of root element
+        this.resize();
     }
 
     // handle messages from worker / server
@@ -210,6 +221,10 @@ export default class Factory {
         logger.log(this.#global_duration);
     }
 
+    send(msg: any) {
+        this.#send(msg);
+    }
+
     reload(e?: unknown) {
         // TODO: reload the entire UI
         console.log('Worker error:', e);
@@ -227,5 +242,39 @@ export default class Factory {
     close() {
         this.#style.remove();
         this.#elements.get('root')?.remove();
+    }
+
+    resize() {
+
+        // actual window size
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+
+        // ideal size based on reference aspect ratio
+        const ax = this.#refWidth;
+        const ay = this.#refHeight;
+
+        // zoom to fit ideal size
+        const zx = width / ax, zy = height / ay;
+
+        // Final width, height and zoom level
+        let zoom: number, w: number, h: number;
+
+        if (zx < zy) {
+            w = ax;
+            h = ax / width * height;
+            zoom = zx;
+        }
+        else {
+            w = ay / height * width;
+            h = ay;
+            zoom = zy;
+        }
+
+        // update styles
+		const root = this.#elements.get('root')!;
+        root.style.setProperty('--zoom-width', w + 'px');
+        root.style.setProperty('--zoom-height', h + 'px');
+        root.style.setProperty('--zoom-scale', zoom.toString());
     }
 }

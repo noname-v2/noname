@@ -1,7 +1,7 @@
 import logger from '../logger';
 
 // unique entity ID
-let entityCount = 0;
+let entityCount = 1;
 
 export default class Entity {
     #id = entityCount++;

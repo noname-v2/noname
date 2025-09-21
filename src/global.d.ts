@@ -56,7 +56,14 @@ declare global {
         rotateY?: number;
         rotateZ?: number;
         transition?: number // transition duration (value x global_duration) for properties change
+        click?: boolean; // whether to listen to click event
+        down?: boolean; // whether to add a temporary .down class when clicking or dragging
+        // drag?: boolean; // whether to listen to drag event
+        // contextmenu?: boolean; // whether to listen to contextmenu event
     }
+
+    // Callback for click events
+    type ClickCallback = (type?: 'right' | 'double' | null) => void;
 
     // Properties for server sync() to process into ElementProps
     interface ComponentProps extends ElementProps {
@@ -69,6 +76,7 @@ declare global {
         width?: number | null;
         height?: number | null;
         aspectRatio?: number | null;
+        onclick?: ClickCallback; // click event handler
         [key: string]: Plain; // other properties passed to the component (trigger re-render on change)
     }
 
