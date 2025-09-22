@@ -1,4 +1,5 @@
 import { isDict, apply } from "../utils";
+import { dimensionProps, elementProps, nodeProps } from '../constants';
 import logger from '../logger';
 import type Server from './server';
 
@@ -29,28 +30,6 @@ export const resolving = new Set<Component>();
 
 // Components already matched with a new Component from render()
 export const resolved = new Set<Component>();
-
-// Keys to identify different types of properties (must be consistent with global.d.ts)
-const dimensionPropKeys = new Set([
-    'left', 'top', 'right', 'bottom', 'width', 'height', 'aspectRatio'
-]);
-const elementPropKeys = new Set([
-    'style', 'dataset', 'className', 'innerHTML',
-    'x', 'y', 'z', 'opacity',
-    'scale', 'scaleX', 'scaleY', 'scaleZ',
-    'rotate', 'rotateX', 'rotateY', 'rotateZ',
-    'transition', 'down',
-    'onClick', 'onRightClick', 'onDoubleClick', 'onMouseDown', 'onContextMenu', 'onDrop'
-])
-const nodePropKeys = new Set([
-    'exclusive', 'slot'
-]);
-
-const componentPropKeys = new Set([
-    ...elementPropKeys,
-    ...dimensionPropKeys,
-    ...nodePropKeys
-]);
 
 // Clear references of a component and its children
 function unlink(cmp: Component) {
@@ -123,24 +102,20 @@ function propsToElement(props: ComponentProps): ElementProps {
     
     // Copy properties that do not need conversion first
     for (const key in props) {
-        if (elementPropKeys.has(key)) {
+        if (key in elementProps) {
             eprops[key] = props[key];
         }
     }
 
+    // Convert dimension properties to CSS styles
     for (const key in props) {
         const value = props[key];
-        if (dimensionPropKeys.has(key)) {
-            // Convert component properties to CSS styles
+        if (key in dimensionProps) {
             eprops.style ??= {};
             if (key in eprops.style) {
                 logger.warn("Overriding existing style." + key);
             }
             eprops.style[key] = key === 'aspectRatio' ? toRatioString(value) : toDimensionString(value);
-        }
-        else if (key === 'onClick' && typeof props[key] === 'string') {
-            // Convert onClick property to click event listener
-            eprops.click = true;
         }
     }
     return eprops;
@@ -184,7 +159,7 @@ function sync() {
 
                 // Render component if there are custom properties to update
                 for (const key in update) {
-                    if (!componentPropKeys.has(key)) {
+                    if (!(key in dimensionProps) && !(key in elementProps) && !(key in nodeProps)) {
                         toRender.add(cmp);
                         break;
                     }
@@ -320,6 +295,7 @@ function unresolve(cmp: Component) {
     }
 }
 
+// Render a component by setting up context and calling its render() method
 function render(cmp: Component) {
     if (rendering !== null || resolved.size || resolving.size) {
         logger.warn("An component is already being rendered: " + components.get(rendering!) + " <- " + components.get(cmp));

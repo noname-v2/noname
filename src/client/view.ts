@@ -7,8 +7,8 @@ export default class View {
     // Root element
     #root: HTMLElement;
 
-    // Event handlers
-    #bindings = new Map<HTMLElement, [string, EventHandlers]>();
+    // Element id and event handlers given an HTMLElement
+    #bindings = new Map<HTMLElement, [string, Pick<ElementProps, EventHandler>]>();
 
     constructor(root: HTMLElement) {
         this.#root = root;
@@ -21,7 +21,7 @@ export default class View {
         };
     }
 
-    bind<K extends keyof EventHandlers>(elem: HTMLElement, id: string, evt: K, handler: EventHandlers[K]) {
+    bind<K extends EventHandler>(elem: HTMLElement, id: string, evt: K, handler: ElementProps[K]) {
         if (!this.#bindings.has(elem)) {
             this.#bindings.set(elem, [id, {}]);
         }
