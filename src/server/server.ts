@@ -60,7 +60,7 @@ export default class Server {
         // Initialize the root stage and component
         logger.log('Server started');
         this.createClient('self');
-        createRoot(this.#api.ui.app(), this);
+        createRoot(this.#api.ui.app(), this, callback => self.onmessage = ({ data }) => callback(data));
         // from here: init stages, load state, etc.
 
         const css: Dict<CSSDict> = {}; // styles from static css property

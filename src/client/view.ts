@@ -1,11 +1,17 @@
 import logger from '../logger';
 import { apply } from '../utils';
 
+// Type for point events (mouse/touch)
+type PointEvent = MouseEvent | Touch;
+
 // View class to manage user interaction and scaling
 export default class View {
     // Reference width and height of root element
     #refWidth = 960;
     #refHeight = 540;
+
+    // Actual zoom level
+    #zoom = 1;
 
     // Root element
     #root: HTMLElement;
@@ -16,9 +22,24 @@ export default class View {
     // Temporarily block mouse events during touch events
     #mouseBlocked = null as ReturnType<typeof setTimeout> | null;
 
-    constructor(root: HTMLElement) {
+    /** Handler for current click event.
+    * [0]: Element that is clicked.
+    * [1]: Location of pointerdown.
+    * [2]: mousedown is triggered by right click.
+    */
+    #clicking: [HTMLElement, [number, number], boolean] | null = null;
+
+    // Temporarily disable event trigger after pointerup to prevent unintended clicks.
+    #dispatched = false;
+
+    // Function to send messages to worker / server
+    #send: (msg: any) => void;
+
+    constructor(root: HTMLElement, send: (msg: any) => void) {
         this.#root = root;
+        this.#send = send;
         this.resize();
+        window.addEventListener('resize', () => this.resize(), { passive: true });
 
         // Prevent default context menu
         root.oncontextmenu = e => {
@@ -26,24 +47,40 @@ export default class View {
             return false;
         };
 
-        // Global touch event handlers
+        // Block mouse events for 1s after touch event
         root.addEventListener('touchstart', () => {
             this.#blockMouse();
         }, { passive: true });
 
+        // Global touch event handlers
         root.addEventListener('touchmove', () => {
             this.#blockMouse();
             this.#dispatchMove();
         }, { passive: true });
-
         root.addEventListener('touchend', () => {
             this.#blockMouse();
             this.#dispatchUp();
         }, { passive: true });
-
         root.addEventListener('touchcancel', () => {
             this.#blockMouse();
             this.#dispatchCancel();
+        }, { passive: true });
+
+        // Global mouse event handlers
+        root.addEventListener('mousemove', () => {
+            if (!this.#mouseBlocked) {
+                this.#dispatchMove();
+            }
+        }, { passive: true });
+        root.addEventListener('mouseup', () => {
+            if (!this.#mouseBlocked) {
+                this.#dispatchUp();
+            }
+        }, { passive: true });
+        root.addEventListener('mouseleave', () => {
+            if (!this.#mouseBlocked) {
+                this.#dispatchCancel();
+            }
         }, { passive: true });
     }
 
@@ -57,34 +94,117 @@ export default class View {
     }
 
     // Bind mousedown / touchstart event to add .down class
-    #dispatchDown(elem: HTMLElement, e: MouseEvent | TouchEvent) {
+    #dispatchDown(elem: HTMLElement, e: PointEvent, right: boolean) {
         const binding = this.#bindings.get(elem);
         if (!binding) {
             return;
         }
-        logger.log('down', binding, e);
-        if (binding[2]) {
-            elem.classList.add('down');
+        logger.log('Mouse down', binding, e);
+
+        const [_, handler, down] = binding;
+        const origin = this.#locate(e);
+
+        // initialize click event
+        if (((handler.onClick && !right) || handler.onRightClick) && !this.#clicking) {
+            this.#clicking = [elem, origin, right];
+            // Add visual effect from .down class if needed
+            if (handler.onClick && down) {
+                elem.classList.add('down');
+            }
+            if (!right) {
+                // simulate right click with long press
+                if (handler.onRightClick) {
+                    const bak = this.#clicking;
+                    setTimeout(() => {
+                        if (bak === this.#clicking) {
+                            this.#clicking[2] = true;
+                            this.#dispatchUp();
+                        }
+                    }, 500);
+                }
+            }
         }
-        // from here: dispatch event to component method
     }
 
     #dispatchMove() {
     }
 
     #dispatchUp() {
+        logger.log('Mouse up');
+        if (this.#dispatched === false) {
+            // dispatch events
+            if (this.#clicking) {
+                this.#dispatched = true;
+                this.#dispatchClick(this.#clicking[0]);
+            }
+            // re-enable event trigger after 310ms (slightly > app.css.transition)
+            if (this.#dispatched) {
+                window.setTimeout(() => this.#dispatched = false, 310);
+            }
+        }
+        if (this.#clicking) {
+            this.#clicking = null;
+        }
+    }
+
+    #dispatchClick(elem: HTMLElement) {
+        const binding = this.#bindings.get(elem);
+        if (!binding || !this.#clicking || this.#clicking[0] !== elem) {
+            return;
+        }
+        const [id, handler] = binding;
+
+        if (handler.onClick && !this.#clicking[2]) {
+            // trigger left click
+            logger.log('Mouse click', id, handler.onClick, this.#clicking[1]);
+            this.#send([id, handler.onClick, this.#clicking[1]]);
+        }
+        else if (handler.onRightClick && this.#clicking[2]) {
+            // trigger right click
+            logger.log('Mouse click', id, handler.onRightClick, this.#clicking[1]);
+            this.#send([id, handler.onRightClick, this.#clicking[1]]);
+        }
+        else {
+            // no handler
+            logger.log('Mouse click', id, 'no handler');
+        }
+
+        // avoid duplicate trigger
+        this.#resetClick(elem);
+    }
+
+    // Cancel click callback for current pointerdown.
+    #resetClick(elem: HTMLElement) {
+        if (this.#clicking && this.#clicking[0] === elem) {
+            this.#clicking = null;
+        }
+        elem.classList.remove('down');
     }
 
     #dispatchCancel() {
+        if (this.#clicking) {
+            this.#clicking[0].classList.remove('down');
+        }
+        this.#clicking = null;
+    }
+
+    // Get the location of mouse or touch event.
+    #locate(e: PointEvent): [number, number] {
+        return [
+            Math.round(e.clientX / this.#zoom),
+            Math.round(e.clientY / this.#zoom)
+        ];
     }
 
     bind(elem: HTMLElement, id: string, handler: Pick<ElementProps, EventHandler>, down: boolean) {
         if (!this.#bindings.has(elem)) {
             this.#bindings.set(elem, [id, {}, down]);
-            elem.addEventListener('touchstart', e => this.#dispatchDown(elem, e), { passive: true });
+            elem.addEventListener('touchstart', e => {
+                this.#dispatchDown(elem, e.touches[0], e.touches.length === 2)
+            }, { passive: true });
             elem.addEventListener('mousedown', e => {
                 if (!this.#mouseBlocked) {
-                    this.#dispatchDown(elem, e);
+                    this.#dispatchDown(elem, e, e.button === 2);
                 }
             }, { passive: true });
         }
@@ -124,5 +244,10 @@ export default class View {
         this.#root.style.setProperty('--zoom-width', w + 'px');
         this.#root.style.setProperty('--zoom-height', h + 'px');
         this.#root.style.setProperty('--zoom-scale', z.toString());
+        this.#zoom = z;
+    }
+
+    send(msg: any) {
+        this.#send(msg);
     }
 }

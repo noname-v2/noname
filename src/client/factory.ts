@@ -33,7 +33,7 @@ export default class Factory {
         document.head.appendChild(this.#style);
 
         // Initialize the size of root element
-        this.#view = new View(root);
+        this.#view = new View(root, send);
     }
 
     // handle messages from worker / server

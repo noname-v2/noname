@@ -205,9 +205,12 @@ function sync() {
 }
 
 // Attach component to root element.
-export function createRoot(cmp: Component, target: Server) {
+export function createRoot(cmp: Component, target: Server, onmessage: (callback: (msg: any) => void) => void) {
     server = target;
     tick(cmp, 'root');
+    onmessage((msg) => {
+        console.log('Received message:', msg);
+    });
 }
 
 // Send a config update
