@@ -30,22 +30,26 @@ export const resolving = new Set<Component>();
 // Components already matched with a new Component from render()
 export const resolved = new Set<Component>();
 
+// Keys to identify different types of properties (must be consistent with global.d.ts)
 const dimensionPropKeys = new Set([
     'left', 'top', 'right', 'bottom', 'width', 'height', 'aspectRatio'
 ]);
-
 const elementPropKeys = new Set([
     'style', 'dataset', 'className', 'innerHTML',
     'x', 'y', 'z', 'opacity',
     'scale', 'scaleX', 'scaleY', 'scaleZ',
     'rotate', 'rotateX', 'rotateY', 'rotateZ',
-    'transition', 'down'
+    'transition', 'down',
+    'onClick', 'onRightClick', 'onDoubleClick', 'onMouseDown', 'onContextMenu', 'onDrop'
+])
+const nodePropKeys = new Set([
+    'exclusive', 'slot'
 ]);
 
 const componentPropKeys = new Set([
     ...elementPropKeys,
     ...dimensionPropKeys,
-    'exclusive', 'slot', 'onClick'
+    ...nodePropKeys
 ]);
 
 // Clear references of a component and its children
@@ -292,7 +296,11 @@ export class ComponentNode {
     parent: Component | null = null; // Parent component
     source: Component | null = rendering; // Source component with the render() method that creates this component
     props: ComponentProps = {}; // Component data
-    onclick: ClickCallback | null = null; // Click event handler
+    onClick: string | null = null; // Click event handler
+    onRightClick: string | null = null; // Right click event handler
+    onDoubleClick: string | null = null; // Double click event handler
+    onMouseDown: string | null = null; // Mouse down event handler
+    onContextMenu: string | null = null; // Context menu event handler
 
     constructor(tag: string) {
         this.tag = tag;

@@ -1,4 +1,5 @@
 import logger from '../logger';
+import View from './view';
 import { isDict, apply } from "../utils";
 import { createElement } from "./element";
 
@@ -14,9 +15,8 @@ export default class Factory {
         [['root', { parent: '-', children: new Set(), props: {} }]]
     );
 
-    // Reference width and height of root element
-    #refWidth = 960;
-    #refHeight = 540;
+    // User interaction and scaling manager
+    #view: View;
 
     // Function to send messages to worker / server
     #send: (msg: any) => void;
@@ -33,7 +33,7 @@ export default class Factory {
         document.head.appendChild(this.#style);
 
         // Initialize the size of root element
-        this.resize();
+        this.#view = new View(root);
     }
 
     // handle messages from worker / server
@@ -203,42 +203,40 @@ export default class Factory {
     // initialize the style of an element
     init(id: string) {
         const props = this.#tree.get(id)!.props;
-        const el = this.#elements.get(id)!;
+        const elem = this.#elements.get(id)!;
 
         // Apply initial properties
         if (props?.style) {
-            apply(el.style, props.style);
+            apply(elem.style, props.style);
         }
         if (props?.className) {
-            el.className = props.className;
+            elem.className = props.className;
         }
         if (props?.dataset) {
             for (const key in props.dataset) {
-                el.dataset[key] = props.dataset[key];
+                elem.dataset[key] = props.dataset[key];
             }
         }
         if (typeof props?.innerHTML === 'string') {
-            el.innerHTML = props.innerHTML;
+            elem.innerHTML = props.innerHTML;
         }
 
-        // Bind click event
-        if (props?.click) {
-            el.style.cursor = 'pointer';
-            el.onclick = (e) => {
-                logger.log('Element clicked:', id);
-                e.stopPropagation();
-                this.#send({ click: id });
-            };
+        // Bind events
+        for (const evt of ['onClick', 'onRightClick', 'onDoubleClick', 'onMouseDown', 'onContextMenu', 'onDrop'] as const) {
+            if (props?.[evt]) {
+                this.#view.bind(elem, id, evt, props[evt]);
+            }
         }
+
         // from here: actually update styles by ElementProps
     }
 
     // update the style of an element
     update(id: string, newProps: ElementProps) {
         const props = this.#tree.get(id)!.props || newProps;
-        const el = this.#elements.get(id)!;
+        const elem = this.#elements.get(id)!;
         if (props?.style) {
-            apply(el.style, props.style);
+            apply(elem.style, props.style);
         }
         // from here: actually update styles by ElementProps
         logger.log(this.#global_duration);
@@ -265,39 +263,5 @@ export default class Factory {
     close() {
         this.#style.remove();
         this.#elements.get('root')?.remove();
-    }
-
-    resize() {
-
-        // actual window size
-        const width = window.innerWidth;
-        const height = window.innerHeight;
-
-        // ideal size based on reference aspect ratio
-        const ax = this.#refWidth;
-        const ay = this.#refHeight;
-
-        // zoom to fit ideal size
-        const zx = width / ax, zy = height / ay;
-
-        // Final width, height and zoom level
-        let zoom: number, w: number, h: number;
-
-        if (zx < zy) {
-            w = ax;
-            h = ax / width * height;
-            zoom = zx;
-        }
-        else {
-            w = ay / height * width;
-            h = ay;
-            zoom = zy;
-        }
-
-        // update styles
-		const root = this.#elements.get('root')!;
-        root.style.setProperty('--zoom-width', w + 'px');
-        root.style.setProperty('--zoom-height', h + 'px');
-        root.style.setProperty('--zoom-scale', zoom.toString());
     }
 }

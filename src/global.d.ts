@@ -37,8 +37,33 @@ declare global {
     // ComponentProps: Update component properties
     type ComponentUpdate = string | ComponentProps;
 
+    // Properties for setting element dimensions and position
+    // number: in px for size / position, ratio for aspectRatio
+    // [number, number]: calc([0]+[1]px) for size / position, [0]/[1] for aspect ratio
+    interface DimensionProps {
+        left?: number | [number, number] | null;
+        top?: number | [number, number] | null;
+        right?: number | [number, number] | null;
+        bottom?: number | [number, number] | null;
+        width?: number | [number, number] | null;
+        height?: number | [number, number] | null;
+        aspectRatio?: number | [number, number] | null;
+    }
+
+    // Properties for event handlers
+    interface EventHandlers {
+        onClick?: string; // click event handler
+        onRightClick?: string; // right click / press and hold event handler
+        onDoubleClick?: string; // double click / double tap event handler
+        onMouseDown?: string; // mouse down / touch start event handler
+        onContextMenu?: string; // context menu event handler
+        onDrop?: Dict; // TODO: drag and drop event handler
+        // Note: event handlers are string names of methods in the Component class, not actual functions
+        // because functions cannot be serialized to/from JSON.
+    }
+
     // Properties for client Factory to process
-    interface ElementProps {
+    interface ElementProps extends EventHandlers {
         style?: CSSDict; // HTML element CSS style
         dataset?: Dict<string>; // HTML element dataset
         className?: string; // HTML element class name
@@ -57,28 +82,23 @@ declare global {
         rotateZ?: number;
         transition?: number // transition duration (value x global_duration) for properties change
         down?: boolean; // whether to add a temporary .down class when clicking or dragging
-        click?: boolean; // whether to listen to click event
-        // drag?: boolean; // whether to listen to drag event
-        // contextmenu?: boolean; // whether to listen to contextmenu event
+    }
+
+    interface NodeProps {
+        exclusive?: string[]; // client ids that can see this component, undefined or empty for all
+        slot?: number; // slot index as identifier when siblings have the same tag
+        [key: string]: Plain; // other properties passed to the component (trigger re-render on change)
     }
 
     // Callback for click events
-    type ClickCallback = (type: 'right' | 'double' | null = null) => void;
+    // 'right': right click or press and hold
+    // 'double': double click / double tap
+    // 'down': mouse down or touch start
+    // null: regular left click / tap
+    type ClickCallback = (type: 'right' | 'double' | 'down' | null = null) => void;
 
     // Properties for server sync() to process into ElementProps
-    interface ComponentProps extends ElementProps {
-        exclusive?: string[]; // client ids that can see this component, undefined or empty for all
-        slot?: number; // slot index as identifier when siblings have the same tag
-        left?: number | null;
-        top?: number | null;
-        right?: number | null;
-        bottom?: number | null;
-        width?: number | null;
-        height?: number | null;
-        aspectRatio?: number | null;
-        onClick?: string; // click event handler
-        [key: string]: Plain; // other properties passed to the component (trigger re-render on change)
-    }
+    type ComponentProps = ElementProps & DimensionProps & NodeProps;
 
     // Type for a function that returns component instance.
     // string: innerHTML
@@ -121,6 +141,5 @@ declare global {
     type Extension = (api: ExtensionAPI) => ExtensionObject;
 
     // Argument passed to element extension module function that defines HTML element callbacks
-    interface ElementAPI extends Dict<_Callbacks> { logger: Logger }
-    type ElementExtension = (api: ElementAPI) => Dict<_Callbacks>;
+    type ElementExtension = (api: Dict<_Callbacks> & { logger: Logger }) => Dict<_Callbacks>;
 }

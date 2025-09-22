@@ -97,7 +97,8 @@ export default class Component {
     static css: CSSDict = {
         display: 'block',
         position: 'absolute',
-		transformOrigin: 'top left'
+		transformOrigin: 'top left',
+        userSelect: 'none',
     };
 
     // Mixin the static css property of other components

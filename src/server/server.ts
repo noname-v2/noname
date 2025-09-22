@@ -16,7 +16,7 @@ export default class Server {
     #components = { Component } as ExtensionAPI['components'];
     #stages = { Stage } as ExtensionAPI['stages'];
     #entities = { Entity } as ExtensionAPI['entities'];
-    #state = new Entity();
+    #state = new Entity(); // from here: dedicated State object with method create('card'), etc?
 
     // API object passed to extension modules
     #api: ExtensionAPI = Object.freeze({
@@ -43,11 +43,8 @@ export default class Server {
                 return target[prop];
             }
         }),
-        state: this.#state.createProxy(),
-        logger,
-        Component,
-        Stage,
-        Entity
+        state: this.#state.createProxy(), logger,
+        Component, Stage, Entity
     });
 
     // Connected clients
@@ -104,7 +101,10 @@ export default class Server {
             }
         }
 
-        // Send CSS styles to clients
+        // Add static style properties from components
+        // from here: add static width(), height(), etc.
+
+        // Convert and send CSS styles to clients
         const styleString = toCSS(styles);
         logger.log(styleString);
         config({'css': styleString});
@@ -161,6 +161,7 @@ export default class Server {
             const cls = defs[name];
             const dict = this.#clsMap(cls);
             if (dict) {
+                // clsMap -> #apply
                 if (check_only) {
                     if (name in dict && !(cls.prototype instanceof dict[name])) {
                         // Attempting to extend incompatible class
