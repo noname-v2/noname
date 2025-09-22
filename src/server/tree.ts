@@ -205,12 +205,15 @@ function sync() {
 }
 
 // Attach component to root element.
-export function createRoot(cmp: Component, target: Server, onmessage: (callback: (msg: any) => void) => void) {
+export function createRoot(cmp: Component, target: Server) {
     server = target;
-    tick(cmp, 'root');
-    onmessage((msg) => {
-        console.log('Received message:', msg);
+    server.onmessage(msg => {
+        if (Array.isArray(msg)) {
+            // const [id, method, pos] = msg;
+            // const node = components.get(id); // from here: using entities.get(id) after making Component a subclass of Entity
+        }
     });
+    tick(cmp, 'root');
 }
 
 // Send a config update

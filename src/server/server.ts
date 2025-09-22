@@ -60,7 +60,7 @@ export default class Server {
         // Initialize the root stage and component
         logger.log('Server started');
         this.createClient('self');
-        createRoot(this.#api.ui.app(), this, callback => self.onmessage = ({ data }) => callback(data));
+        createRoot(this.#api.ui.app(), this);
         // from here: init stages, load state, etc.
 
         const css: Dict<CSSDict> = {}; // styles from static css property
@@ -137,18 +137,26 @@ export default class Server {
         this.#walkDefs(defs, false);
     }
 
-    // Get storage object from extension class
-    #clsMap(cls: ComponentType | StageType | EntityType) {
-        if (cls.prototype instanceof Component) {
-            return this.#components;
+    // Set message handler for client messages
+    onmessage(callback: (msg: ElementResponse) => void) {
+        // from here: route messages to correct client if multiple clients
+        self.onmessage = ({data}) => {
+            logger.log('Received message:', data);
+            callback(data as ElementResponse);
+        };
+    }
+
+    // Check extension compatibility or apply extension definitions
+    #applyDef(name: string, cls: ComponentType | StageType | EntityType, dict: any, check_only: boolean) {
+        if (check_only) {
+            if (name in dict && !(cls.prototype instanceof dict[name])) {
+                // Attempting to extend incompatible class
+                throw new Error(`${name} already defined`);
+            }
         }
-        if (cls.prototype instanceof Stage) {
-            return this.#stages;
+        else {
+            dict[name] = cls;
         }
-        if (cls.prototype instanceof Entity) {
-            return this.#entities;
-        }
-        return null;
     }
 
     // Iterate over extension object definitions
@@ -159,22 +167,16 @@ export default class Server {
             }
             // Select the correct destination from lib for extension-defined class
             const cls = defs[name];
-            const dict = this.#clsMap(cls);
-            if (dict) {
-                // clsMap -> #apply
-                if (check_only) {
-                    if (name in dict && !(cls.prototype instanceof dict[name])) {
-                        // Attempting to extend incompatible class
-                        throw new Error(`${name} already defined`);
-                    }
-                }
-                else {
-                    dict[name] = cls;
-                    if (dict === this.#components) {
-                        // Method to create child components inside Component.render(), e.g. ui.app()
-                        this.#ui[toSnake(name)] = getMaker(name, cls as ComponentType, this.#api.ui);
-                    }
-                }
+            if (cls.prototype instanceof Component) {
+                this.#applyDef(name, cls, this.#components, check_only);
+                // Method to create child components inside Component.render(), e.g. ui.app()
+                this.#ui[toSnake(name)] = getMaker(name, cls as ComponentType, this.#api.ui);
+            }
+            else if (cls.prototype instanceof Stage) {
+                this.#applyDef(name, cls, this.#stages, check_only);
+            }
+            else if (cls.prototype instanceof Entity) {
+                this.#applyDef(name, cls, this.#entities, check_only);
             }
         }
     }

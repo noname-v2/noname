@@ -3,6 +3,7 @@ import logger from '../logger';
 // unique entity ID
 let entityCount = 1;
 
+// Classes with serializable data
 export default class Entity {
     #id = entityCount++;
 

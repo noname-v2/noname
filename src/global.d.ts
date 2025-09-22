@@ -45,12 +45,11 @@ declare global {
     type NodeProps = Partial<typeof nodeProps> & Dict;
     type EventHandler = typeof eventHandlers[number];
 
-    // Callback for click events
-    // 'right': right click or press and hold
-    // 'double': double click / double tap
-    // 'down': mouse down or touch start
-    // null: regular left click / tap
-    type ClickCallback = (type: 'right' | 'double' | 'down' | null = null) => void;
+    // Callback for element events
+    // [0]: Element id
+    // [1]: Name of the component method to be called
+    // [2]: [x, y] position of the event
+    type ElementResponse = [string, ElementProps[EventHandler], [number, number]];
 
     // Properties for server sync() to process into ElementProps
     type ComponentProps = ElementProps & DimensionProps & NodeProps;

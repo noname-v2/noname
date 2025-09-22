@@ -1,8 +1,8 @@
 /*
  * Card object.
  */
-const ext: Extension = ({ entities }) => ({
-    Card: class extends entities.Entity {}
+const ext: Extension = ({ Entity }) => ({
+    Card: class extends Entity {}
 });
 
 export default ext;
