@@ -224,7 +224,7 @@ export default class Factory {
         // Bind events
         for (const evt of ['onClick', 'onRightClick', 'onDoubleClick', 'onMouseDown', 'onContextMenu', 'onDrop'] as const) {
             if (props?.[evt]) {
-                this.#view.bind(elem, id, evt, props[evt]);
+                this.#view.bind(elem, id, { [evt]: props[evt] }, props.down ?? false);
             }
         }
 

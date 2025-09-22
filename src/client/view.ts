@@ -1,3 +1,6 @@
+import logger from '../logger';
+import { apply } from '../utils';
+
 // View class to manage user interaction and scaling
 export default class View {
     // Reference width and height of root element
@@ -8,7 +11,10 @@ export default class View {
     #root: HTMLElement;
 
     // Element id and event handlers given an HTMLElement
-    #bindings = new Map<HTMLElement, [string, Pick<ElementProps, EventHandler>]>();
+    #bindings = new Map<HTMLElement, [string, Pick<ElementProps, EventHandler>, boolean]>();
+
+    // Temporarily block mouse events during touch events
+    #mouseBlocked = null as ReturnType<typeof setTimeout> | null;
 
     constructor(root: HTMLElement) {
         this.#root = root;
@@ -19,14 +25,73 @@ export default class View {
             e.preventDefault();
             return false;
         };
+
+        // Global touch event handlers
+        root.addEventListener('touchstart', () => {
+            this.#blockMouse();
+        }, { passive: true });
+
+        root.addEventListener('touchmove', () => {
+            this.#blockMouse();
+            this.#dispatchMove();
+        }, { passive: true });
+
+        root.addEventListener('touchend', () => {
+            this.#blockMouse();
+            this.#dispatchUp();
+        }, { passive: true });
+
+        root.addEventListener('touchcancel', () => {
+            this.#blockMouse();
+            this.#dispatchCancel();
+        }, { passive: true });
     }
 
-    bind<K extends EventHandler>(elem: HTMLElement, id: string, evt: K, handler: ElementProps[K]) {
-        if (!this.#bindings.has(elem)) {
-            this.#bindings.set(elem, [id, {}]);
+    #blockMouse() {
+        if (this.#mouseBlocked) {
+            clearTimeout(this.#mouseBlocked);
         }
-        this.#bindings.get(elem)![1][evt] = handler;
-        // from here: add event listeners.
+        this.#mouseBlocked = setTimeout(() => {
+            this.#mouseBlocked = null;
+        }, 1000);
+    }
+
+    // Bind mousedown / touchstart event to add .down class
+    #dispatchDown(elem: HTMLElement, e: MouseEvent | TouchEvent) {
+        const binding = this.#bindings.get(elem);
+        if (!binding) {
+            return;
+        }
+        logger.log('down', binding, e);
+        if (binding[2]) {
+            elem.classList.add('down');
+        }
+        // from here: dispatch event to component method
+    }
+
+    #dispatchMove() {
+    }
+
+    #dispatchUp() {
+    }
+
+    #dispatchCancel() {
+    }
+
+    bind(elem: HTMLElement, id: string, handler: Pick<ElementProps, EventHandler>, down: boolean) {
+        if (!this.#bindings.has(elem)) {
+            this.#bindings.set(elem, [id, {}, down]);
+            elem.addEventListener('touchstart', e => this.#dispatchDown(elem, e), { passive: true });
+            elem.addEventListener('mousedown', e => {
+                if (!this.#mouseBlocked) {
+                    this.#dispatchDown(elem, e);
+                }
+            }, { passive: true });
+        }
+
+        const binding = this.#bindings.get(elem)!;
+        apply(binding[1], handler);
+        binding[2] = down;
     }
 
     resize() {
