@@ -1,5 +1,5 @@
-const ext: Extension = ({ stages }) => ({
-    App: class extends stages.Stage {}
+const ext: Extension = ({ Stage }) => ({
+    App: class extends Stage {}
 });
 
 export default ext;

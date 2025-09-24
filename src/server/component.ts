@@ -3,8 +3,6 @@ import logger from '../logger';
 import { toKebab, isDict, apply } from "../utils";
 import { components, resolving, resolved, unsynced, tick, getRendering, ComponentNode } from './tree';
 
-// From here: Make Component a subclass of Entity
-
 // Check if a new component matches an existing one
 function matchComponent(a: ComponentNode, b: ComponentNode) {
     // Check constructor

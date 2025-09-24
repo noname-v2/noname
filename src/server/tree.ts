@@ -1,10 +1,8 @@
 import { isDict, apply } from "../utils";
 import { dimensionProps, elementProps, nodeProps } from '../constants';
+import Entity from './entity';
 import logger from '../logger';
 import type Server from './server';
-
-// ID of the next component to be created.
-let nextId = 1;
 
 // Component currently being rendered.
 let rendering: Component | null = null;
@@ -190,7 +188,7 @@ function sync() {
         }
         else if (typeof update === 'string') {
             // Component moved or created
-            updates[id] = [propsToElement(components.get(cmp)!.props), update, node.tag];
+            updates[id] = [ propsToElement(components.get(cmp)!.props), update, node.tag ];
         }
         else if (isDict(update)) {
             // Component properties updated
@@ -270,25 +268,15 @@ export function getRendering() {
 }
 
 // Data wrapper for component properties
-export class ComponentNode {
-    id = (nextId++).toString(); // unique component ID
-    tag: string // Component class name, e.g. "App"
+export class ComponentNode extends Entity {
     children: Component[] = []; // Child components added by this.append()
     parent: Component | null = null; // Parent component
     source: Component | null = rendering; // Source component with the render() method that creates this component
     props: ComponentProps = {}; // Component data
-    onClick: string | null = null; // Click event handler
-    onRightClick: string | null = null; // Right click event handler
-    onDoubleClick: string | null = null; // Double click event handler
-    onMouseDown: string | null = null; // Mouse down event handler
-    onContextMenu: string | null = null; // Context menu event handler
 
-    constructor(tag: string) {
-        this.tag = tag;
+    constructor(public tag: string) {
+        super();
     }
-
-    // TODO: Convert to Plain
-    flatten() { }
 }
 
 // Mark a component and its children as resolved / unresolved

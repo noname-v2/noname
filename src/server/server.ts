@@ -43,7 +43,7 @@ export default class Server {
                 return target[prop];
             }
         }),
-        state: this.#state.createProxy(), logger,
+        state: this.#state, logger,
         Component, Stage, Entity
     });
 
