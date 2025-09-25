@@ -1,6 +1,5 @@
 import type _Component from './server/component';
 import type _Stage from './server/stage';
-import type _Entity from './server/entity';
 import type _Callbacks from './client/element';
 import type { dimensionProps, eventHandlers, elementProps, nodeProps } from './constants';
 import type { Logger } from './logger';
@@ -8,7 +7,7 @@ import type { Logger } from './logger';
 declare global {
     // Plain object
     type Plain = number | string | boolean | null | Plain[] | { [key: string]: Plain };
-    type Dict<T=Plain> = {[key: string]: T};
+    type Dict<T = Plain> = { [key: string]: T };
 
     // CSS declaration
     type CSSDict = Partial<CSSStyleDeclaration> | { [key: string]: CSSDict };
@@ -38,7 +37,6 @@ declare global {
     // ComponentProps: Update component properties
     type ComponentUpdate = string | ComponentProps;
 
-    
     // Component / Element properties categoried by their usage
     type DimensionProps = Partial<typeof dimensionProps>;
     type ElementProps = Partial<typeof elementProps>;
@@ -59,41 +57,38 @@ declare global {
     // number: slot id for parent render() to identify
     // Component: child component
     // Partial<ComponentProps>: component properties
-    type ComponentMaker = (...args: (string | number | Component | Component[] | Partial<ComponentProps>)[]) => Component;
-
-    // Component type
     type Component = _Component;
-    type ComponentType = typeof _Component;
-
-    type Stage = _Stage;
-    type StageType = typeof _Stage;
-
-    // Entity type
-    type Entity = _Entity;
-    type EntityType = typeof _Entity;
-    type EntityData = Plain | Map | Set | Entity | EntityData[] | { [key: string]: EntityData };
-
-    // Argument passed to extension module function
-    interface ExtensionAPI {
-        ui: { [key: Uncapitalize<string>]: ComponentMaker; };
-        components: { [key: Capitalize<string>]: ComponentType; };
-        stages: { [key: Capitalize<string>]: StageType; };
-        entities: { [key: Capitalize<string>]: EntityType; };
-        state: Dict<EntityData>;
-        logger: Logger;
-        Component: ComponentType;
-        Stage: StageType;
-        Entity: EntityType;
+    type ComponentMaker = (...args: (string | number | Component | Component[] | Partial<ComponentProps>)[]) => Component;
+    type UI = Dict<ComponentMaker>;
+    interface ComponentDefinition {
+        render?: (this: Component, ui: UI) => void;
+        popup?: (this: Component, ui: UI) => void;
+        css?: CSSDict;
+        mixin?: string[];
+        native?: boolean;
     }
 
-    // Return value of extension module function
-    interface ExtensionObject {
-        [key: Capitalize<string>]: ComponentType | StageType | EntityType;
+    //  Stage type
+    type Stage = _Stage;
+    interface StageDefinition {
+        run?: (this: Stage, ...args: any[]) => Promise<void> | void;
+    }
+
+    // Type for custom objects that can be serialized and stored
+    interface EntityAPI {
+        data: Dict<any>;
+    }
+    interface EntityDefinition {
+        [key: string]: (this: EntityAPI, ...args: any[]) => any; // Public properties
     }
 
     // An extension module is a function that takes ExtensionAPI and returns new definitions
-    type Extension = (api: ExtensionAPI) => ExtensionObject;
+    interface Extension {
+        components?: Dict<ComponentDefinition>;
+        stages?: Dict<StageDefinition>;
+        entities?: Dict<EntityDefinition>;
+    }
 
     // Argument passed to element extension module function that defines HTML element callbacks
-    type ElementExtension = (api: Dict<_Callbacks> & { logger: Logger }) => Dict<_Callbacks>;
+    type ElementExtension = Dict<_Callbacks>;
 }

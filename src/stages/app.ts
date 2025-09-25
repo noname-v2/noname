@@ -1,5 +1,7 @@
-const ext: Extension = ({ Stage }) => ({
-    App: class extends Stage {}
-});
-
-export default ext;
+export default {
+    stages: {
+        app: {
+            run() {}
+        },
+    }
+} as Extension;

@@ -1,12 +1,7 @@
-/*
- * Gallery element.
- */
-const ext: ElementExtension = ({logger}) => ({
-    App: {
+export default {
+    app: {
         created() {
-            logger.log('App element created');
+            console.log('App element created');
         }
     }
-});
-
-export default ext;
+} as ElementExtension;

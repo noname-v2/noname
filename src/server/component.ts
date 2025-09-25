@@ -3,6 +3,23 @@ import logger from '../logger';
 import { toKebab, isDict, apply } from "../utils";
 import { components, resolving, resolved, unsynced, tick, getRendering, ComponentNode } from './tree';
 
+// From here: consider only keeping base Component and Stage class?
+// Component callbacks only have two types:
+// 1) determined by current Stage
+// 2) create a popup menu
+// 3) update a component state (e.g. sort cards, pre-trigger skills)
+// callback(true) -> execute callback determined by current Stage
+// callback('popup') -> show popup menu defined in component definition
+// callback({sort:'auto'}, true) -> state.sort = 'auto' -> set sort mode to auto and trigger re-render
+// callback({sort:[1,3,5,2,4]}, false) -> state.sort = [1,3,5,2,4] -> manually set card order and do not trigger re-render
+// interface ComponentDefinition {
+// render: () => void;
+// command?: () => void;
+// css?: CSSDict;
+// mixin?: string[];
+// native?: boolean;
+// }
+
 // Check if a new component matches an existing one
 function matchComponent(a: ComponentNode, b: ComponentNode) {
     // Check constructor
@@ -18,6 +35,11 @@ function matchComponent(a: ComponentNode, b: ComponentNode) {
     // Check slots, slotA === slotB or both null/undefined
     if (a.props.slot !== b.props.slot) {
         return a.props.slot == null && b.props.slot == null;
+    }
+
+    // Check slots, slotA === slotB or both null/undefined
+    if (a.props.innerHTML || b.props.innerHTML) {
+        return a.props.innerHTML === b.props.innerHTML;
     }
     return true;
 }
@@ -39,10 +61,10 @@ export function toCSS(cssDict: CSSDict): string {
 }
 
 // Create a function for making component instances
-export function getMaker(tag: string, cls: ComponentType, ui: ExtensionAPI['ui']): ComponentMaker {
+export function getMaker(tagName: string, def: ComponentDefinition, ui: UI): ComponentMaker {
     return (...args) => {
-        const cmp = new cls();
-        const node = new ComponentNode((cls.native ? '' : 'nn-') + toKebab(tag));
+        const cmp = new Component();
+        const node = new ComponentNode(tagName, def);
         components.set(cmp, node);
         unsynced.add(cmp);
         tick(cmp, '-')
@@ -82,6 +104,14 @@ export function getMaker(tag: string, cls: ComponentType, ui: ExtensionAPI['ui']
     };
 }
 
+// Default CSS styles
+export const defaultCSS: CSSDict = {
+    display: 'block',
+    position: 'absolute',
+    transformOrigin: 'top left',
+    userSelect: 'none',
+};
+
 export default class Component {
     #props = new Proxy({}, {
         get: (_, prop: string) => {
@@ -93,27 +123,10 @@ export default class Component {
         }
     }) as ComponentProps;
 
-    // Default CSS styles
-    static css: CSSDict = {
-        display: 'block',
-        position: 'absolute',
-		transformOrigin: 'top left',
-        userSelect: 'none',
-    };
-
-    // Mixin the static css property of other components
-    static mixin: string[] = [];
-
-    // Whether the component is a native DOM element or prefixed with `nn-`
-    static native = false;
-
     // Component properties getter
     get props() {
         return this.#props;
     }
-
-    // Define child components here
-    render() {}
 
     // Get child component by tag and optionally slot index
     query(tag: string, slot?: number): Component | null {

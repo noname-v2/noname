@@ -1,8 +1,12 @@
 /*
  * Card object.
  */
-const ext: Extension = ({ Entity }) => ({
-    Card: class extends Entity {}
-});
-
-export default ext;
+export default {
+    entities: {
+        card: {
+            init() {
+                
+            }
+        }
+    }
+} as Extension;

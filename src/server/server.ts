@@ -3,48 +3,25 @@ import components from '../build/components';
 import entities from '../build/entities';
 
 import { createRoot, config } from './tree';
-import { isCapatalized, toKebab, toSnake } from "../utils";
-import { getMaker, toCSS } from "./component";
-import Component from "./component";
-import Entity from "./entity";
-import Stage from "./stage";
+import { toKebab } from "../utils";
+import { getMaker, toCSS, defaultCSS } from "./component";
 import logger from '../logger';
 
 export default class Server {
-    // Internal object storing extension definitions
-    #ui = {} as ExtensionAPI['ui'];
-    #components = { Component } as ExtensionAPI['components'];
-    #stages = { Stage } as ExtensionAPI['stages'];
-    #entities = { Entity } as ExtensionAPI['entities'];
-    #state = new Entity(); // from here: dedicated State object with method create('card'), etc?
+    // Internal object storing definitions
+    #ui = {} as UI;
+    #components = {} as Dict<ComponentDefinition>;
+    #stages = {} as Dict<StageDefinition>;
+    #entities = {} as Dict<EntityDefinition>;
 
-    // API object passed to extension modules
-    #api: ExtensionAPI = Object.freeze({
-        ui: new Proxy(this.#ui, {
-            get: (target, prop: Uncapitalize<string>) => {
-                if (!(prop in target)) {
-                    target[prop] = getMaker(prop, Component, this.#api.ui);
-                }
-                return target[prop];
+    // Component creation for render()
+    ui = new Proxy(this.#ui, {
+        get: (target, prop: string) => {
+            if (!(prop in target)) {
+                target[prop] = getMaker(prop, { native: true }, this.ui);
             }
-        }),
-        components: new Proxy(this.#components, {
-            get: (target, prop: Capitalize<string>) => {
-                return target[prop];
-            }
-        }),
-        stages: new Proxy(this.#stages, {
-            get: (target, prop: Capitalize<string>) => {
-                return target[prop];
-            }
-        }),
-        entities: new Proxy(this.#entities, {
-            get: (target, prop: Capitalize<string>) => {
-                return target[prop];
-            }
-        }),
-        state: this.#state, logger,
-        Component, Stage, Entity
+            return target[prop];
+        }
     });
 
     // Connected clients
@@ -60,7 +37,7 @@ export default class Server {
         // Initialize the root stage and component
         logger.log('Server started');
         this.createClient('self');
-        createRoot(this.#api.ui.app(), this);
+        createRoot(this.ui.app(), this);
         // from here: init stages, load state, etc.
 
         const css: Dict<CSSDict> = {}; // styles from static css property
@@ -69,10 +46,9 @@ export default class Server {
         const styles: Dict<CSSDict> = {}; // combined css and mixins
 
         // Gather styles from all components by tag name
-        for (const name in this.#components) {
-            const cls = this.#components[name as Capitalize<string>];
-            const tagName = toKebab(name);
-            native[tagName] = cls.native;
+        for (const tagName in this.#components) {
+            const cls = this.#components[tagName as Capitalize<string>];
+            native[tagName] = cls.native || false;
             if (cls.css) {
                 css[tagName] = cls.css;
             }
@@ -85,18 +61,17 @@ export default class Server {
         }
 
         // Combine css and mixins into final styles
-        const toSelector = (tag: string) => (native[tag] ? '' : 'nn-') + toKebab(tag);
         for (const tagName in css) {
-            let selector = toSelector(tagName);
+            let selector = tagName;
             mixin[tagName]?.forEach(m => {
-                selector += `,${toSelector(m)}`;
+                selector += `,${m}`;
             });
             styles[selector] = css[tagName];
 
             // Fill default styles from Component.css
-            for (const m in Component.css) {
+            for (const m in defaultCSS) {
                 if (!(m in styles[selector])) {
-                    (styles as any)[selector][m] = (Component as any).css[m];
+                    (styles as any)[selector][m] = (defaultCSS as any)[m];
                 }
             }
         }
@@ -130,11 +105,10 @@ export default class Server {
 
     // Import an extension of <Component | Stage | Entity>.
     importExtension(ext: Extension) {
-        const defs = ext(this.#api);
         // Check duplicate definition before applying any changes
-        this.#walkDefs(defs, true);
+        this.#walkDefs(ext, true);
         // Apply definitions from the extension
-        this.#walkDefs(defs, false);
+        this.#walkDefs(ext, false);
     }
 
     // Set message handler for client messages
@@ -146,37 +120,36 @@ export default class Server {
         };
     }
 
-    // Check extension compatibility or apply extension definitions
-    #applyDef(name: string, cls: ComponentType | StageType | EntityType, dict: any, check_only: boolean) {
-        if (check_only) {
-            if (name in dict && !(cls.prototype instanceof dict[name])) {
-                // Attempting to extend incompatible class
-                throw new Error(`${name} already defined`);
-            }
-        }
-        else {
-            dict[name] = cls;
-        }
-    }
-
     // Iterate over extension object definitions
-    #walkDefs(defs: ExtensionObject, check_only: boolean) {
-        for (const name in defs) {
-            if (!isCapatalized(name)) {
-                continue;
+    #walkDefs(ext: Extension, check_only: boolean) {
+        // Define new components
+        for (const name in ext.components) {
+            const def = ext.components[name];
+            const tagName = (def.native ? '' : 'nn-') + toKebab(name);
+            if (check_only) {
+                if (tagName in this.#components) {
+                    throw new Error(`${tagName} already defined`);
+                }
             }
-            // Select the correct destination from lib for extension-defined class
-            const cls = defs[name];
-            if (cls.prototype instanceof Component) {
-                this.#applyDef(name, cls, this.#components, check_only);
-                // Method to create child components inside Component.render(), e.g. ui.app()
-                this.#ui[toSnake(name)] = getMaker(name, cls as ComponentType, this.#api.ui);
+            else {
+                this.#components[tagName] = def;
+                const maker = getMaker(tagName, def, this.ui);
+                this.#ui[tagName] = maker;
+                this.#ui[name] = maker; // also allow access by original name
             }
-            else if (cls.prototype instanceof Stage) {
-                this.#applyDef(name, cls, this.#stages, check_only);
-            }
-            else if (cls.prototype instanceof Entity) {
-                this.#applyDef(name, cls, this.#entities, check_only);
+        }
+
+        // Define new stages / entities
+        for (const [section, target] of [['stages', this.#stages], ['entities', this.#entities]] as const) {
+            for (const name in ext[section]) {
+                if (check_only) {
+                    if (name in target) {
+                        throw new Error(`${name} already defined`);
+                    }
+                }
+                else {
+                    target[name] = ext[section][name];
+                }
             }
         }
     }

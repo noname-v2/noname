@@ -1,8 +1,10 @@
 import { isDict, apply } from "../utils";
 import { dimensionProps, elementProps, nodeProps } from '../constants';
-import Entity from './entity';
 import logger from '../logger';
 import type Server from './server';
+
+// For generating unique component IDs
+let componentId = 1;
 
 // Component currently being rendered.
 let rendering: Component | null = null;
@@ -268,15 +270,14 @@ export function getRendering() {
 }
 
 // Data wrapper for component properties
-export class ComponentNode extends Entity {
+export class ComponentNode {
+    id = `c${componentId++}`; // Unique component ID
     children: Component[] = []; // Child components added by this.append()
     parent: Component | null = null; // Parent component
     source: Component | null = rendering; // Source component with the render() method that creates this component
     props: ComponentProps = {}; // Component data
 
-    constructor(public tag: string) {
-        super();
-    }
+    constructor(public tag: string, public def: ComponentDefinition) {}
 }
 
 // Mark a component and its children as resolved / unresolved
@@ -301,7 +302,7 @@ function render(cmp: Component) {
     rendering = cmp;
     unresolve(cmp);
     const n = resolving.size;
-    cmp.render();
+    components.get(cmp)?.def?.render?.call(cmp, server.ui);
 
     // Remove outdated children
     for (const child of resolving) {
