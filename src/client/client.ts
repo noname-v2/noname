@@ -37,7 +37,7 @@ export default class Client {
         else if (src.endsWith('.js')) {
             // Create a web worker to run the server code
             const factory = new Factory(document.body, this);
-            this.channel = new Channel(src, factory);
+            this.channel = new Channel(src, factory, this.logger);
             return factory;
         }
         else {
