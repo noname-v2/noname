@@ -27,7 +27,7 @@ const factoryCallbacks: Map<string, Callbacks>[] = [];
 
 // Get the callback function with custom callbacks (registered later) having higher priority
 function getCallback(tagName: string, method: keyof Callbacks): any {
-    for (let i = factories.length - 1; i >= 0; i--) {
+    for (let i = factories.length; i-- > 0;) {
         const func = factoryCallbacks[i].get(tagName)?.[method];
         if (func) {
             return func;

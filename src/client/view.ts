@@ -1,11 +1,14 @@
-import logger from '../logger';
 import { apply } from '../utils';
+import type Client from "./client";
 
 // Type for point events (mouse/touch)
 type PointEvent = MouseEvent | Touch;
 
 // View class to manage user interaction and scaling
 export default class View {
+    // Reference to client object
+    #client: Client;
+
     // Reference width and height of root element
     #refWidth = 960;
     #refHeight = 540;
@@ -32,12 +35,9 @@ export default class View {
     // Temporarily disable event trigger after pointerup to prevent unintended clicks.
     #dispatched = false;
 
-    // Function to send messages to worker / server
-    #send: (msg: any) => void;
-
-    constructor(root: HTMLElement, send: (msg: any) => void) {
+    constructor(root: HTMLElement, client: Client) {
         this.#root = root;
-        this.#send = send;
+        this.#client = client;
         this.resize();
         window.addEventListener('resize', () => this.resize(), { passive: true });
 
@@ -99,7 +99,7 @@ export default class View {
         if (!binding) {
             return;
         }
-        logger.log('Mouse down', binding, e);
+        this.#client.logger.log('Mouse down', binding, e);
 
         const [_, handler, down] = binding;
         const origin = this.#locate(e);
@@ -130,7 +130,7 @@ export default class View {
     }
 
     #dispatchUp() {
-        logger.log('Mouse up');
+        this.#client.logger.log('Mouse up');
         if (this.#dispatched === false) {
             // dispatch events
             if (this.#clicking) {
@@ -156,17 +156,17 @@ export default class View {
 
         if (handler.onClick && !this.#clicking[2]) {
             // trigger left click
-            logger.log('Mouse click', id, handler.onClick, this.#clicking[1]);
-            this.#send([id, handler.onClick, this.#clicking[1]]);
+            this.#client.logger.log('Mouse click', id, handler.onClick, this.#clicking[1]);
+            this.#client.send([id, handler.onClick, this.#clicking[1]]);
         }
         else if (handler.onRightClick && this.#clicking[2]) {
             // trigger right click
-            logger.log('Mouse click', id, handler.onRightClick, this.#clicking[1]);
-            this.#send([id, handler.onRightClick, this.#clicking[1]]);
+            this.#client.logger.log('Mouse click', id, handler.onRightClick, this.#clicking[1]);
+            this.#client.send([id, handler.onRightClick, this.#clicking[1]]);
         }
         else {
             // no handler
-            logger.log('Mouse click', id, 'no handler');
+            this.#client.logger.log('Mouse click', id, 'no handler');
         }
 
         // avoid duplicate trigger
@@ -248,6 +248,6 @@ export default class View {
     }
 
     send(msg: any) {
-        this.#send(msg);
+        this.#client.send(msg);
     }
 }

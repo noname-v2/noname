@@ -1,7 +1,7 @@
 import translate from "./locale";
-import logger from '../logger';
-import { toKebab, isDict, apply } from "../utils";
-import { components, resolving, resolved, unsynced, tick, getRendering, ComponentNode } from './tree';
+import { isDict, apply } from "../utils";
+import type Server from "./server";
+import type Library from "./library";
 
 // From here: consider only keeping base Component and Stage class?
 // Component callbacks only have two types:
@@ -20,129 +20,103 @@ import { components, resolving, resolved, unsynced, tick, getRendering, Componen
 // native?: boolean;
 // }
 
+
+
 // Check if a new component matches an existing one
-function matchComponent(a: ComponentNode, b: ComponentNode) {
+function match(a: Component, b: Component, lib: Library) {
     // Check constructor
-    if (a.tag !== b.tag) {
+    if (lib.tag(a) !== lib.tag(b)) {
         return false;
     }
 
     // Check the render() method that created the component
-    if (a.source !== b.source) {
+    if (lib.get(a, 'source') !== lib.get(b, 'source')) {
         return false;
     }
 
     // Check slots, slotA === slotB or both null/undefined
-    if (a.props.slot !== b.props.slot) {
-        return a.props.slot == null && b.props.slot == null;
+    if (lib.get(a, 'props').slot !== lib.get(b, 'props').slot) {
+        return lib.get(a, 'props').slot == null && lib.get(b, 'props').slot == null;
     }
 
-    // Check slots, slotA === slotB or both null/undefined
-    if (a.props.innerHTML || b.props.innerHTML) {
-        return a.props.innerHTML === b.props.innerHTML;
-    }
     return true;
 }
 
-// Convert a CSSDict to a CSS string
-export function toCSS(cssDict: CSSDict): string {
-    let cssString = '';
-    for (const key in cssDict) {
-        const value = (cssDict as Dict<CSSDict>)[key];
-        if (typeof value === 'string' || typeof value === 'number') {
-            const prop = key.replace(/[A-Z]/g, m => '-' + m.toLowerCase());
-            cssString += `${prop}:${value};`;
-        }
-        else if (isDict(value)) {
-            cssString += `${key}{${toCSS(value)}}`;
-        }
-    }
-    return cssString;
-}
+export default class Component {
+    #data: {
+        props: ComponentProps;
+        children: Component[];
+        parent: Component | null;
+        source: Component | null;
+    };
 
-// Create a function for making component instances
-export function getMaker(tagName: string, def: ComponentDefinition, ui: UI): ComponentMaker {
-    return (...args) => {
-        const cmp = new Component();
-        const node = new ComponentNode(tagName, def);
-        components.set(cmp, node);
-        unsynced.add(cmp);
-        tick(cmp, '-')
-        logger.log(`Creating component <${node.tag}> id=${node.id}`);
+    // Reference to the Server instance
+    #server: Server;
 
+    constructor({data, init, ui, logger}: EntityAPI, server: Server,
+        ...args: (string | number | Component | Component[] | Partial<ComponentProps>)[]) {
+        // Initialize component properties
+        this.#data = data;
+        this.#server = server;
+
+        if (init(this)) {
+            // Restored from saved state and does not need initialization
+            return;
+        }
+
+        // Initialize component data
+        this.#data.props = {};
+        this.#data.children = [];
+        this.#data.parent = null;
+        this.#data.source = this.#server.tree.rendering;
+
+        // Label that the component is not yet synced to clients
+        this.#server.tree.unsynced.add(this);
+        this.#server.tree.tick(this, '-')
+
+        // Process arguments
         for (const arg of args) {
             if (arg instanceof Component) {
                 // Append arg as child component
-                cmp.append(arg);
+                this.append(arg);
             }
             else if (Array.isArray(arg)) {
                 // Append arg as child components
                 for (const item of arg) {
-                    cmp.append(item);
+                    this.append(item);
                 }
             }
             else if (isDict(arg)) {
                 // Assign component properties
-                apply(node.props, arg);
+                apply(this.#data.props, arg);
             }
             else if (typeof arg === "string") {
                 // Append text node
-                cmp.append(ui.span({ innerHTML: translate(arg) }));
+                this.append(ui.span({ innerHTML: translate(arg) }));
             }
             else if (typeof arg === "number") {
                 // Slot index, to be handled by parent component
-                node.props.slot = arg;
+                this.#data.props.slot = arg;
             }
         }
 
-        if (node.props.innerHTML !== null && node.props.innerHTML !== undefined && node.props.innerHTML !== "" && node.children.length > 0) {
+        if (this.#data.props.innerHTML && this.#data.children.length > 0) {
             logger.warn("Component cannot have both innerHTML and children, removing innerHTML.");
-            node.props.innerHTML = "";
+            this.#data.props.innerHTML = null;
         }
-
-        return cmp;
-    };
-}
-
-// Default CSS styles
-export const defaultCSS: CSSDict = {
-    display: 'block',
-    position: 'absolute',
-    transformOrigin: 'top left',
-    userSelect: 'none',
-};
-
-export default class Component {
-    #props = new Proxy({}, {
-        get: (_, prop: string) => {
-            const node = components.get(this)!;
-            if (prop in node.props) {
-                return node.props[prop as keyof ComponentProps];
-            }
-            return undefined;
-        }
-    }) as ComponentProps;
-
-    // Component properties getter
-    get props() {
-        return this.#props;
     }
 
     // Get child component by tag and optionally slot index
     query(tag: string, slot?: number): Component | null {
-        const node = components.get(this)!;
-        const kebabTag = toKebab(tag);
-
         // loop over direct children first
-        for (const child of node.children) {
-            const childNode = components.get(child)!;
-            if (childNode.tag === kebabTag && (slot === undefined || childNode.props.slot === slot)) {
+        for (const child of this.#data.children) {
+            if (this.#server.lib.tag(child) === tag && (slot === undefined || this.#server.lib.get(child, 'props').slot === slot)) {
                 return child;
             }
         }
 
         // then recursively search in children
-        for (const child of node.children) {
+        for (const child of this.#data.children) {
             const found = child.query(tag, slot);
             if (found) {
                 return found;
@@ -161,93 +135,89 @@ export default class Component {
 
     // Append a component to its children (single target).
     #append(target: Component) {
-        const node = components.get(this)!;
-        const rendering = getRendering();
+        this.#server.logger.log("Appending component", this.#server.lib.id(target), "to", this.#server.lib.id(this));
+        const rendering = this.#server.tree.rendering;
 
-        if (node.props.innerHTML !== null && node.props.innerHTML !== undefined && node.props.innerHTML !== "") {
-            logger.warn("Component cannot have both innerHTML and children, skipping append().");
+        if (this.#data.props.innerHTML) {
+            this.#server.logger.warn("Component cannot have both innerHTML and children, skipping append().");
             return;
         }
 
-        const targetNode = components.get(target)!;
-
-        if (targetNode.parent) {
-            if (targetNode.source !== rendering) {
-                logger.warn("Component can only be moved from the same context as where it is created.", node, targetNode);
+        if (target.#data.parent) {
+            if (target.#data.source !== rendering) {
+                this.#server.logger.warn("Component can only be moved from the same context as where it is created.", this, target);
                 return;
             }
             // Remove from previous parent only if created from the same render() context
-            const children = components.get(targetNode.parent)?.children;
-            if (children?.includes(target)) {
+            const children = target.#data.parent.#data.children;
+            if (children.includes(target)) {
                 children.splice(children.indexOf(target), 1);
             }
         }
 
         if (rendering !== null) {
             // Match existing child if possible (only in a render() context)
-            for (const child of node.children) {
-                const childNode = components.get(child)!;
+            for (const child of this.#data.children) {
                 // Match by source, tag and slot
-                if (!resolved.has(child) && matchComponent(childNode, targetNode)) {
-                    resolved.add(child);
-                    resolving.delete(child);
+                if (this.#server.tree.resolving.has(child) && !this.#server.tree.resolved.has(child) && match(child, target, this.#server.lib)) {
+                    this.#server.tree.resolved.add(child);
+                    this.#server.tree.resolving.delete(child);
 
                     // match child elements
-                    for (const targetChild of targetNode.children) {
-                        if (components.get(targetChild)?.source === rendering) {
+                    for (const targetChild of this.#server.lib.get(target, 'children')) {
+                        if (this.#server.lib.get(targetChild, 'source') === rendering) {
                             child.append(targetChild);
                         }
                     }
 
                     // update child props
-                    tick(child, targetNode.props);
+                    this.#server.tree.tick(child, target.#data.props);
 
                     // Remove temporary component
-                    tick(target, 'x');
-                    logger.log(`Reusing component <${childNode.tag}> id=${childNode.id}`);
+                    this.#server.tree.tick(target, 'x');
+                    this.#server.logger.log(`Reusing component <${this.#server.lib.tag(child)}> id=${this.#server.lib.id(child)}`);
                     return;
                 }
             }
         }
 
         // create new child when no existing child match
-        tick(target, node.id);
-        node.children.push(target);
-        targetNode.parent = this;
+        this.#server.tree.tick(target, this.#server.lib.id(this));
+        this.#data.children.push(target);
+        this.#server.lib.set(target, 'parent', this);
     }
 
     // Remove a component and clear its references.
     unlink() {
         if (this.#detach()) {
-            if (resolving.has(this)) {
-                resolved.add(this);
-                resolving.delete(this);
+            if (this.#server.tree.resolving.has(this)) {
+                this.#server.tree.resolved.add(this);
+                this.#server.tree.resolving.delete(this);
             }
-            tick(this, 'x');
-        }   
+            this.#server.tree.tick(this, 'x');
+        }
     }
 
     // Remove a component but keep its reference.
     detach() {
         if (this.#detach()) {
-            tick(this, '-');
+            this.#server.tree.tick(this, '-');
         }
     }
 
     // Remove reference from parent
     #detach() {
-        const node = components.get(this)!;
-        const rendering = getRendering();
-        if (node.source !== rendering) {
-            logger.warn("Component can only be detached from the same context as where it is created", node, components.get(rendering!) ?? null);
+        const rendering = this.#server.tree.rendering;
+        if (this.#data.source !== rendering) {
+            this.#server.logger.warn("Component can only be detached from the same context as where it is created", this, rendering);
             return false;
         }
-        if (node.parent) {
-            const children = components.get(node.parent)?.children;
-            if (children?.includes(this)) {
+        if (this.#data.parent) {
+            const children = this.#server.lib.get(this.#data.parent, 'children');
+            if (children.includes(this)) {
                 children.splice(children.indexOf(this), 1);
             }
-            node.parent = null;
+            this.#data.parent = null;
         }
         return true;
     }

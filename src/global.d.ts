@@ -1,8 +1,9 @@
-import type _Component from './server/component';
-import type _Stage from './server/stage';
-import type _Callbacks from './client/element';
+import type Component from './server/component';
+import type Stage from './server/stage';
+import type Channel from './server/channel';
+import type Callbacks from './client/element';
 import type { dimensionProps, eventHandlers, elementProps, nodeProps } from './constants';
-import type { Logger } from './logger';
+import type Logger from './logger';
 
 declare global {
     // Plain object
@@ -57,7 +58,6 @@ declare global {
     // number: slot id for parent render() to identify
     // Component: child component
     // Partial<ComponentProps>: component properties
-    type Component = _Component;
     type ComponentMaker = (...args: (string | number | Component | Component[] | Partial<ComponentProps>)[]) => Component;
     type UI = Dict<ComponentMaker>;
     interface ComponentDefinition {
@@ -69,26 +69,46 @@ declare global {
     }
 
     //  Stage type
-    type Stage = _Stage;
     interface StageDefinition {
         run?: (this: Stage, ...args: any[]) => Promise<void> | void;
     }
 
-    // Type for custom objects that can be serialized and stored
+    // Initialization function for the data of Entity / Component / Stage
+    // If returns true, the instance is restored from saved state and does not need further initialization
     interface EntityAPI {
-        data: Dict<any>;
-    }
-    interface EntityDefinition {
-        [key: string]: (this: EntityAPI, ...args: any[]) => any; // Public properties
+        init: (target: any) => boolean; // Initializes and returns whether entity is restored from previous state
+        data: any; // Entity data
+        ui: UI; // UI object for creating components
+        ref?: any; // Reference to extension-defined definitions
+        logger: Logger; // Logger instance
+        channel: Channel; // Channel instance
     }
 
     // An extension module is a function that takes ExtensionAPI and returns new definitions
     interface Extension {
-        components?: Dict<ComponentDefinition>;
-        stages?: Dict<StageDefinition>;
-        entities?: Dict<EntityDefinition>;
+        component?: Dict<ComponentDefinition>;
+        stage?: Dict<StageDefinition>;
+        hero?: Dict<any>;
+        card?: Dict<any>;
+        skill?: Dict<any>;
+        token?: Dict<any>;
+        permanent?: Dict<any>;
+        entity?: (api: any) => Dict<any>;
+        [key: string]: Dict<any>;
     }
 
     // Argument passed to element extension module function that defines HTML element callbacks
-    type ElementExtension = Dict<_Callbacks>;
+    type ElementExtension = Dict<Callbacks>;
+
+    // Client constructor options
+    interface ClientOptions {
+        debug?: boolean; // whether to enable debug mode
+    }
+
+    // Server constructor options
+    interface ServerOptions {
+        dur?: number; // global duration multiplier
+        debug?: boolean; // whether to enable debug mode
+        channel?: string; // Channel type ('websocket' or 'worker')
+    }
 }

@@ -1,319 +1,262 @@
-import { isDict, apply } from "../utils";
-import { dimensionProps, elementProps, nodeProps } from '../constants';
-import logger from '../logger';
+import { isDict, apply, toKebab } from "../utils";
+import { elementProps, dimensionProps, nodeProps } from "../constants";
 import type Server from './server';
+import type Component from './component';
+import { propsToElement } from "./css";
 
-// For generating unique component IDs
-let componentId = 1;
+export default class Tree {
+    // Component currently being rendered.
+    #rendering: Component | null = null;
 
-// Component currently being rendered.
-let rendering: Component | null = null;
+    // A sync() operation is in progress.
+    #syncing = false;
 
-// A sync() operation is in progress.
-let syncing = false;
+    // Pending updates to be processed and sent to main thread
+    #pending: Map<Component, ComponentUpdate> | null = null;
 
-// Pending updates to be processed and sent to main thread
-let pending: Map<Component, ComponentUpdate> | null = null;
+    // Newly created but not yet synced components
+    // When deleted before sync(), no data needs to be sent to main thread
+    #unsynced = new Set<Component>();
 
-// Function to send data to main thread
-let server: Server;
+    // Rendered components under a component being re-rendered, to be deleted if not resolved
+    #resolving = new Set<Component>();
 
-// Component data storage
-export const components = new WeakMap<Component, ComponentNode>();
+    // Components already matched with a new Component from render()
+    #resolved = new Set<Component>();
 
-// Newly created but not yet synced components
-// When deleted before sync(), no data needs to be sent to main thread
-export const unsynced = new Set<Component>();
+    // Reference to the Server instance
+    #server: Server;
 
-// Rendered components under a component being re-rendered, to be deleted if not resolved
-export const resolving = new Set<Component>();
-
-// Components already matched with a new Component from render()
-export const resolved = new Set<Component>();
-
-// Clear references of a component and its children
-function unlink(cmp: Component) {
-    if (pending?.has(cmp)) {
-        if (unsynced.has(cmp)) {
-            // If it has not been unsynced, avoid sending data to main thread
-            pending.delete(cmp);
-        }
-        else {
-            // If it has been synced, make sure it is marked for deletion
-            pending.set(cmp, 'x');
-        }
+    get unsynced() {
+        return this.#unsynced;
     }
 
-    // Clear children's references recursively
-    components.get(cmp)?.children.forEach(child => unlink(child));
-
-    // Clear its own references
-    components.delete(cmp);
-}
-
-// Compare updates with current properties and remove unchanged entries
-function filterUpdate(update: ComponentProps, props: ComponentProps) {
-    const toDelete = new Set<string>();
-    for (const key in update) {
-        if (isDict(props[key]) && isDict(update[key])) {
-            filterUpdate(update[key], props[key]);
-        }
-        else if (props[key] === update[key]) {
-            toDelete.add(key);
-        }
-    }
-    for (const key of toDelete) {
-        delete update[key];
-    }
-}
-
-// Convert aspect ratio to CSS style string
-function toRatioString(value: any): string {
-    if (typeof value === 'number') {
-        return value.toString();
-    }
-    if (Array.isArray(value) && value.length === 2) {
-        return `${value[0]} / ${value[1]}`;
-    }
-    if (typeof value === 'string') {
-        return value;
-    }
-    return '';
-}
-
-// Convert number, string or [number, number] to CSS style string
-function toDimensionString(value: any): string {
-    if (typeof value === 'number') {
-        return value + 'px';
-    }
-    if (Array.isArray(value) && value.length === 2) {
-        const dval = value[1] > 0 ? `+ ${value[1]}px` : `- ${-value[1]}px`;
-        return `calc(${value[0]}% ${dval})`;
-    }
-    if (typeof value === 'string') {
-        return value;
-    }
-    return '';
-}
-
-// Convert ComponentProps to ElementProps
-function propsToElement(props: ComponentProps): ElementProps {
-    const eprops = {} as any;
-    
-    // Copy properties that do not need conversion first
-    for (const key in props) {
-        if (key in elementProps) {
-            eprops[key] = props[key];
-        }
+    get resolving() {
+        return this.#resolving;
     }
 
-    // Convert dimension properties to CSS styles
-    for (const key in props) {
-        const value = props[key];
-        if (key in dimensionProps) {
-            eprops.style ??= {};
-            if (key in eprops.style) {
-                logger.warn("Overriding existing style." + key);
+    get resolved() {
+        return this.#resolved;
+    }
+
+    get rendering() {
+        return this.#rendering;
+    }
+
+    constructor(server: Server) {
+        this.#server = server;
+    }
+
+    // Clear references of a component and its children
+    #unlink(cmp: Component) {
+        if (this.#pending?.has(cmp)) {
+            if (this.#unsynced.has(cmp)) {
+                // If it has not been unsynced, avoid sending data to main thread
+                this.#pending.delete(cmp);
             }
-            eprops.style[key] = key === 'aspectRatio' ? toRatioString(value) : toDimensionString(value);
-        }
-    }
-    return eprops;
-}
-
-// Process pending updates and send to main thread
-function sync() {
-    if (!pending || syncing) {
-        return;
-    }
-    logger.log("Syncing", pending.size, "components");
-    syncing = true;
-
-    // Components that have already been rendered in the current sync() call
-    const rendered = new Set<Component>();
-
-    while (true) {
-        // Remove references to unlinked components
-        const toUnlink = new Set<Component>();
-        for (const [cmp, update] of pending) {
-            if (components.has(cmp) && update === 'x') {
-                toUnlink.add(cmp);
+            else {
+                // If it has been synced, make sure it is marked for deletion
+                this.#pending.set(cmp, 'x');
             }
         }
-        for (const cmp of toUnlink) {
-            unlink(cmp);
+
+        // Clear children's references recursively
+        this.#server.lib.get(cmp, 'children')?.forEach((child: Component) => this.#unlink(child));
+
+        // Clear its own references
+        this.#server.lib.delete(cmp);
+    }
+
+    // Compare updates with current properties and remove unchanged entries
+    #filterUpdate(update: ComponentProps, props: ComponentProps) {
+        const toDelete = new Set<string>();
+        for (const key in update) {
+            if (isDict(props[key]) && isDict(update[key])) {
+                this.#filterUpdate(update[key], props[key]);
+            }
+            else if (props[key] === update[key]) {
+                toDelete.add(key);
+            }
         }
+        for (const key of toDelete) {
+            delete update[key];
+        }
+    }
 
-        // Find components that need to be rendered (created, moved or custom properties updated)
-        const toRender = new Set<Component>();
-        for (const [cmp, update] of pending) {
-            if (rendered.has(cmp) || !components.has(cmp)) {
-                continue;
-            }
-            if (typeof update === 'string') {
-                toRender.add(cmp);
-            }
-            else if (isDict(update)) {
-                // Remove unchanged property updates
-                filterUpdate(components.get(cmp)!.props, update);
+    // Process pending updates and send to main thread
+    #sync() {
+        if (!this.#pending || this.#syncing) {
+            return;
+        }
+        this.#server.logger.log("Syncing", this.#pending.size, "components");
+        this.#syncing = true;
 
-                // Render component if there are custom properties to update
-                for (const key in update) {
-                    if (!(key in dimensionProps) && !(key in elementProps) && !(key in nodeProps)) {
-                        toRender.add(cmp);
-                        break;
+        // Components that have already been rendered in the current sync() call
+        const rendered = new Set<Component>();
+
+        while (true) {
+            // Remove references to unlinked components
+            const toUnlink = new Set<Component>();
+            for (const [cmp, update] of this.#pending) {
+                if (this.#server.lib.has(cmp) && update === 'x') {
+                    toUnlink.add(cmp);
+                }
+            }
+            for (const cmp of toUnlink) {
+                this.#unlink(cmp);
+            }
+
+            // Find components that need to be rendered (created, moved or custom properties updated)
+            const toRender = new Set<Component>();
+            for (const [cmp, update] of this.#pending) {
+                if (rendered.has(cmp) || !this.#server.lib.has(cmp)) {
+                    continue;
+                }
+                if (typeof update === 'string') {
+                    toRender.add(cmp);
+                }
+                else if (isDict(update)) {
+                    // Remove unchanged property updates
+                    this.#filterUpdate(this.#server.lib.get(cmp, 'props'), update);
+
+                    // Render component if there are custom properties to update
+                    for (const key in update) {
+                        if (!(key in dimensionProps) && !(key in elementProps) && !(key in nodeProps)) {
+                            toRender.add(cmp);
+                            break;
+                        }
                     }
                 }
             }
-        }
-        if (!toRender.size) {
-            break;
-        }
+            if (!toRender.size) {
+                break;
+            }
 
-        // Render all queued components
-        for (const cmp of toRender) {
-            if (!rendered.has(cmp)) {
-                rendered.add(cmp);
-                render(cmp);
+            // Render all queued components
+            for (const cmp of toRender) {
+                if (!rendered.has(cmp)) {
+                    rendered.add(cmp);
+                    this.#render(cmp);
+                }
             }
         }
-    }
 
-    // Sync to main thread
-    const updates: ClientUpdate = {};
-    for (const [cmp, update] of pending) {
-        const node = components.get(cmp)!;
-        const id = node.id;
-        if (update === 'x') {
-            // Component deleted
-            updates[id] = 'x';
-        }
-        else if (typeof update === 'string') {
-            // Component moved or created
-            updates[id] = [ propsToElement(components.get(cmp)!.props), update, node.tag ];
-        }
-        else if (isDict(update)) {
-            // Component properties updated
-            updates[id] = propsToElement(update);
-        }
-    }
-    server.broadcast(updates);
-
-    // Cleanup
-    pending = null;
-    syncing = false;
-}
-
-// Attach component to root element.
-export function createRoot(cmp: Component, target: Server) {
-    server = target;
-    server.onmessage(msg => {
-        if (Array.isArray(msg)) {
-            // const [id, method, pos] = msg;
-            // const node = components.get(id); // from here: using entities.get(id) after making Component a subclass of Entity
-        }
-    });
-    tick(cmp, 'root');
-}
-
-// Send a config update
-export function config(update: ConfigUpdate) {
-    server.broadcast(update);
-}
-
-// Schedule a component update
-export function tick(cmp: Component, update: ComponentUpdate) {
-    if (pending === null) {
-        pending = new Map();
-        queueMicrotask(sync);
-    }
-    if (pending.has(cmp)) {
-        // merge updates
-        const node = components.get(cmp)!;
-        const current = pending.get(cmp)!;
-        if (update === 'x') {
-            pending.set(cmp, 'x');
-        }
-        else if (current === 'x') {
-            logger.warn("Component already marked for deletion, cannot update.");
-        }
-        else if (typeof update === 'string') {
-            // Apply queued props change immediately since parent is changed
-            if (isDict(current)) {
-                apply(node.props, current);
+        // Sync to main thread
+        const updates: ClientUpdate = {};
+        for (const [cmp, update] of this.#pending) {
+            const id = this.#server.lib.id(cmp);
+            if (update === 'x') {
+                // Component deleted
+                updates[id] = 'x';
             }
-            pending.set(cmp, update);
-        }
-        else if (typeof current === 'string') {
-            // Update props directly if parent is changed
-            if (isDict(update)) {
-                apply(node.props, update);
+            else if (typeof update === 'string') {
+                // Component moved or created
+                const tagName = (this.#server.lib.ref(cmp)?.native ? '' : 'nn-') + toKebab(this.#server.lib.tag(cmp)!);
+                updates[id] = [propsToElement(this.#server.lib.get(cmp, 'props'), this.#server.logger), update, tagName];
+            }
+            else if (isDict(update)) {
+                // Component properties updated
+                updates[id] = propsToElement(update, this.#server.logger);
             }
         }
-        else if (isDict(current) && isDict(update)) {
-            // Merge props update
-            apply(current, update);
+        this.#server.channel.broadcast(updates);
+
+        // Cleanup
+        this.#pending = null;
+        this.#syncing = false;
+    }
+
+
+    // Attach component to root element.
+    createRoot(cmp: Component) {
+        this.#server.channel.onmessage(msg => {
+            if (Array.isArray(msg)) {
+                // const [id, method, pos] = msg;
+                // const node = components.get(id); // from here: using entities.get(id) after making Component a subclass of Entity
+            }
+        });
+        this.tick(cmp, 'root');
+    }
+
+    // Schedule a component update
+    tick(cmp: Component, update: ComponentUpdate) {
+        if (this.#pending === null) {
+            this.#pending = new Map();
+            queueMicrotask(() => this.#sync());
+        }
+        if (this.#pending.has(cmp)) {
+            // merge updates
+            const current = this.#pending.get(cmp)!;
+            if (update === 'x') {
+                this.#pending.set(cmp, 'x');
+            }
+            else if (current === 'x') {
+                this.#server.logger.warn("Component already marked for deletion, cannot update.");
+            }
+            else if (typeof update === 'string') {
+                // Apply queued props change immediately since parent is changed
+                if (isDict(current)) {
+                    apply(this.#server.lib.get(cmp, 'props'), current);
+                }
+                this.#pending.set(cmp, update);
+            }
+            else if (typeof current === 'string') {
+                // Update props directly if parent is changed
+                if (isDict(update)) {
+                    apply(this.#server.lib.get(cmp, 'props'), update);
+                }
+            }
+            else if (isDict(current) && isDict(update)) {
+                // Merge props update
+                apply(current, update);
+            }
+            else {
+                this.#server.logger.warn("Unknown update type: ", current, update);
+            }
         }
         else {
-            logger.warn("Unknown update type: ", current, update);
+            // Create a new update
+            this.#pending.set(cmp, update);
         }
     }
-    else {
-        // Create a new update
-        pending.set(cmp, update);
-    }
-}
 
-// Get the component currently being rendered
-export function getRendering() {
-    return rendering;
-}
-
-// Data wrapper for component properties
-export class ComponentNode {
-    id = `c${componentId++}`; // Unique component ID
-    children: Component[] = []; // Child components added by this.append()
-    parent: Component | null = null; // Parent component
-    source: Component | null = rendering; // Source component with the render() method that creates this component
-    props: ComponentProps = {}; // Component data
-
-    constructor(public tag: string, public def: ComponentDefinition) {}
-}
-
-// Mark a component and its children as resolved / unresolved
-function unresolve(cmp: Component) {
-    for (const child of components.get(cmp)!.children) {
-        if (components.get(child)!.source === rendering) {
-            resolving.add(cmp);
-            unresolve(child);
+    // Mark a component and its children as resolved / unresolved
+    #unresolve(cmp: Component) {
+        for (const child of this.#server.lib.get(cmp, 'children')) {
+            if (this.#server.lib.get(child, 'source') === this.#rendering) {
+                this.#resolving.add(cmp);
+                this.#unresolve(child);
+            }
         }
     }
-}
 
-// Render a component by setting up context and calling its render() method
-function render(cmp: Component) {
-    if (rendering !== null || resolved.size || resolving.size) {
-        logger.warn("An component is already being rendered: " + components.get(rendering!) + " <- " + components.get(cmp));
-        return;
+    // Render a component by setting up context and calling its render() method
+    #render(cmp: Component) {
+        if (this.#rendering !== null || this.#resolved.size || this.#resolving.size) {
+            this.#server.logger.warn("An component is already being rendered: " +
+                this.#server.lib.tag(this.#rendering) + this.#server.lib.id(this.#rendering) + " <- " +
+                this.#server.lib.tag(cmp) + this.#server.lib.id(cmp));
+            return;
+        }
+        this.#server.logger.log("Rendering", this.#server.lib.tag(cmp), this.#server.lib.id(cmp));
+
+        // Setup render environment
+        this.#rendering = cmp;
+        this.#unresolve(cmp);
+        const n = this.#resolving.size;
+        this.#server.lib.ref(cmp)?.render?.call(cmp, this.#server.lib.ui);
+
+        // Remove outdated children
+        for (const child of this.#resolving) {
+            child.unlink();
+        }
+
+        // Cleanup
+        if (this.#resolving.size || this.#resolved.size !== n) {
+            this.#server.logger.warn(`Unmatched components after render(): ${this.#resolving.size} unresolved, ${this.#resolved.size} resolved, total ${n}`);
+            this.#resolving.clear();
+        }
+        this.#resolved.clear();
+        this.#rendering = null;
     }
-    logger.log("Rendering", components.get(cmp));
-
-    // Setup render environment
-    rendering = cmp;
-    unresolve(cmp);
-    const n = resolving.size;
-    components.get(cmp)?.def?.render?.call(cmp, server.ui);
-
-    // Remove outdated children
-    for (const child of resolving) {
-        child.unlink();
-    }
-
-    // Cleanup
-    if (resolving.size || resolved.size !== n) {
-        logger.warn(`Unmatched components after render(): ${resolving.size} unresolved, ${resolved.size} resolved, total ${n}`);
-        resolving.clear();
-    }
-    resolved.clear();
-    rendering = null;
 }

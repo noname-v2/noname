@@ -1,5 +1,5 @@
 export default {
-    components: {
+    component: {
         layer: {
             css: {
                 width: '100%',

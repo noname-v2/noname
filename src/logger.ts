@@ -1,5 +1,5 @@
-export class Logger {
-    debug = false;
+export default class Logger {
+    constructor(public debug = false) {}
 
     log(message?: any, ...optionalParams: any[]) {
         if (this.debug) {
@@ -35,5 +35,3 @@ export class Logger {
         }
     }
 }
-
-export default new Logger();

@@ -2,7 +2,7 @@
  * App component.
  */
 export default {
-    components: {
+    component: {
         app: {
             css: {
                 width: 'var(--zoom-width)',
