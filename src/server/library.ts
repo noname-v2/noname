@@ -30,7 +30,7 @@ export default class Library {
             if (!(tag in target)) {
                 target[tag] = { native: true };
             }
-            return ((...args) => this.create('component', tag, this.#server, ...args)) as ComponentMaker;
+            return ((...args) => this.create('component', tag, this.#server, ...args)) as UI[string];
         }
     }) as UI;
 

@@ -21,23 +21,12 @@ declare global {
     // [0]: Updated properties
     // [1]: Parent component ID, '-' if detached
     // [2]: HTML element tag
-    type ElementUpdate = 'x' | ElementProps | [ElementProps, string, string];
-
-    interface ConfigUpdate {
+    interface ClientUpdate {
         dur?: number; // global duration multiplier
         css?: string; // global CSS styles
+        [key: string]: 'x' | ElementProps | [ElementProps, string, string];
     }
-
-    interface ClientUpdate extends ConfigUpdate {
-        [key: string]: ElementUpdate;
-    }
-
-    // UI updates pending to be sent to main thread
-    // key: Component ID
-    // string: Parent component ID of new / moved component, '-' if detached, 'x' if unlinked
-    // ComponentProps: Update component properties
-    type ComponentUpdate = string | ComponentProps;
-
+    
     // Component / Element properties categoried by their usage
     type DimensionProps = Partial<typeof dimensionProps>;
     type ElementProps = Partial<typeof elementProps>;
@@ -58,8 +47,7 @@ declare global {
     // number: slot id for parent render() to identify
     // Component: child component
     // Partial<ComponentProps>: component properties
-    type ComponentMaker = (...args: (string | number | Component | Component[] | Partial<ComponentProps>)[]) => Component;
-    type UI = Dict<ComponentMaker>;
+    type UI = Dict<(...args: (string | number | Component | Component[] | Partial<ComponentProps>)[]) => Component>;
     interface ComponentDefinition {
         render?: (this: Component, ui: UI) => void;
         popup?: (this: Component, ui: UI) => void;

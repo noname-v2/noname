@@ -12,7 +12,9 @@ export default class Tree {
     #syncing = false;
 
     // Pending updates to be processed and sent to main thread
-    #pending: Map<Component, ComponentUpdate> | null = null;
+    // string: Parent component ID of new / moved component, '-' if detached, 'x' if unlinked
+    // ComponentProps: Update component properties
+    #pending: Map<Component, string | ComponentProps> | null = null;
 
     // Newly created but not yet synced components
     // When deleted before sync(), no data needs to be sent to main thread
@@ -179,7 +181,7 @@ export default class Tree {
     }
 
     // Schedule a component update
-    tick(cmp: Component, update: ComponentUpdate) {
+    tick(cmp: Component, update: string | ComponentProps) {
         if (this.#pending === null) {
             this.#pending = new Map();
             queueMicrotask(() => this.#sync());

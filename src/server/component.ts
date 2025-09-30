@@ -65,14 +65,14 @@ export default class Component {
         }
 
         // Initialize component data
-        this.#data.props = {};
-        this.#data.children = [];
-        this.#data.parent = null;
-        this.#data.source = this.#server.tree.rendering;
+        data.props = {};
+        data.children = [];
+        data.parent = null;
+        data.source = server.tree.rendering;
 
         // Label that the component is not yet synced to clients
-        this.#server.tree.unsynced.add(this);
-        this.#server.tree.tick(this, '-')
+        server.tree.unsynced.add(this);
+        server.tree.tick(this, '-')
 
         // Process arguments
         for (const arg of args) {
@@ -88,7 +88,7 @@ export default class Component {
             }
             else if (isDict(arg)) {
                 // Assign component properties
-                apply(this.#data.props, arg);
+                apply(data.props, arg);
             }
             else if (typeof arg === "string") {
                 // Append text node
@@ -96,13 +96,13 @@ export default class Component {
             }
             else if (typeof arg === "number") {
                 // Slot index, to be handled by parent component
-                this.#data.props.slot = arg;
+                data.props.slot = arg;
             }
         }
 
-        if (this.#data.props.innerHTML && this.#data.children.length > 0) {
+        if (data.props.innerHTML && data.children.length > 0) {
             logger.warn("Component cannot have both innerHTML and children, removing innerHTML.");
-            this.#data.props.innerHTML = null;
+            data.props.innerHTML = null;
         }
     }
 
