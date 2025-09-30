@@ -246,7 +246,7 @@ export default class Tree {
         this.#rendering = cmp;
         this.#unresolve(cmp);
         const n = this.#resolving.size;
-        this.#server.lib.ref(cmp)?.render?.call(cmp, this.#server.lib.ui);
+        this.#server.lib.ref(cmp)?.render?.call(cmp, this.#server.ui);
 
         // Remove outdated children
         for (const child of this.#resolving) {

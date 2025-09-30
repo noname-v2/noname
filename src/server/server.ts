@@ -23,6 +23,16 @@ export default class Server {
     // Virtual DOM tree
     tree = new Tree(this);
 
+    // UI object for creating components
+    ui = new Proxy(this.lib.refs('component'), {
+        get: (target, tag: string) => {
+            if (!(tag in target)) {
+                target[tag] = { native: true };
+            }
+            return ((...args) => this.lib.create('component', tag, this, ...args)) as UI[string];
+        }
+    }) as UI;
+
     constructor(public options: ServerOptions = {}) {
         this.logger = new Logger(options.debug)
 
@@ -39,7 +49,7 @@ export default class Server {
             this.channel.clients.add('self');
         }
         // Initialize the root stage and component
-        this.tree.createRoot(this.lib.ui.app());
+        this.tree.createRoot(this.ui.app());
         // from here: init stages, load state, etc.
         const styleString = getStyleString(this.lib.refs('component'));
         this.logger.log(styleString);

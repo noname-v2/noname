@@ -28,9 +28,7 @@ declare global {
     }
     
     // Component / Element properties categoried by their usage
-    type DimensionProps = Partial<typeof dimensionProps>;
     type ElementProps = Partial<typeof elementProps>;
-    type NodeProps = Partial<typeof nodeProps> & Dict;
     type EventHandler = typeof eventHandlers[number];
 
     // Callback for element events
@@ -40,7 +38,7 @@ declare global {
     type ElementResponse = [string, ElementProps[EventHandler], [number, number]];
 
     // Properties for server sync() to process into ElementProps
-    type ComponentProps = ElementProps & DimensionProps & NodeProps;
+    type ComponentProps = ElementProps & Partial<typeof dimensionProps> & Partial<typeof nodeProps> & Dict;
 
     // Type for a function that returns component instance.
     // string: innerHTML

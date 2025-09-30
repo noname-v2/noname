@@ -24,20 +24,6 @@ export default class Library {
     // Dict of type name -> tag name -> tag definition
     #refs: Extension = {component: {}};
 
-    // Shortcut for this.create() for components
-    #ui = new Proxy(this.#refs.component!, {
-        get: (target, tag: string) => {
-            if (!(tag in target)) {
-                target[tag] = { native: true };
-            }
-            return ((...args) => this.create('component', tag, this.#server, ...args)) as UI[string];
-        }
-    }) as UI;
-
-    get ui() {
-        return this.#ui;
-    }
-
     // Map from entity to its data
     // [0]: unique id
     // [1]: entity type
@@ -108,7 +94,7 @@ export default class Library {
         const id = (this.#count++).toString();
         const api: EntityAPI = {
             data,
-            ui: this.#ui,
+            ui: this.#server.ui,
             logger: this.#server.logger,
             channel: this.#server.channel,
             init: target => {

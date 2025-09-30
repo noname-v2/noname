@@ -1,7 +1,6 @@
 import translate from "./locale";
 import { isDict, apply } from "../utils";
 import type Server from "./server";
-import type Library from "./library";
 
 // From here: consider only keeping base Component and Stage class?
 // Component callbacks only have two types:
@@ -20,28 +19,6 @@ import type Library from "./library";
 // native?: boolean;
 // }
 
-
-
-// Check if a new component matches an existing one
-function match(a: Component, b: Component, lib: Library) {
-    // Check constructor
-    if (lib.tag(a) !== lib.tag(b)) {
-        return false;
-    }
-
-    // Check the render() method that created the component
-    if (lib.get(a, 'source') !== lib.get(b, 'source')) {
-        return false;
-    }
-
-    // Check slots, slotA === slotB or both null/undefined
-    if (lib.get(a, 'props').slot !== lib.get(b, 'props').slot) {
-        return lib.get(a, 'props').slot == null && lib.get(b, 'props').slot == null;
-    }
-
-    return true;
-}
-
 export default class Component {
     #data: {
         props: ComponentProps;
@@ -53,7 +30,7 @@ export default class Component {
     // Reference to the Server instance
     #server: Server;
 
-    constructor({data, init, ui, logger}: EntityAPI, server: Server,
+    constructor({ data, init, ui, logger }: EntityAPI, server: Server,
         ...args: (string | number | Component | Component[] | Partial<ComponentProps>)[]) {
         // Initialize component properties
         this.#data = data;
@@ -159,7 +136,7 @@ export default class Component {
             // Match existing child if possible (only in a render() context)
             for (const child of this.#data.children) {
                 // Match by source, tag and slot
-                if (this.#server.tree.resolving.has(child) && !this.#server.tree.resolved.has(child) && match(child, target, this.#server.lib)) {
+                if (this.#server.tree.resolving.has(child) && !this.#server.tree.resolved.has(child) && this.#match(child, target)) {
                     this.#server.tree.resolved.add(child);
                     this.#server.tree.resolving.delete(child);
 
@@ -219,6 +196,27 @@ export default class Component {
             }
             this.#data.parent = null;
         }
+        return true;
+    }
+
+    // Check if a new component matches an existing one
+    #match(a: Component, b: Component) {
+        // Check constructor
+        const lib = this.#server.lib;
+        if (lib.tag(a) !== lib.tag(b)) {
+            return false;
+        }
+
+        // Check the render() method that created the component
+        if (lib.get(a, 'source') !== lib.get(b, 'source')) {
+            return false;
+        }
+
+        // Check slots, slotA === slotB or both null/undefined
+        if (lib.get(a, 'props').slot !== lib.get(b, 'props').slot) {
+            return lib.get(a, 'props').slot == null && lib.get(b, 'props').slot == null;
+        }
+
         return true;
     }
 };
