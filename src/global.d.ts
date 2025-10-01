@@ -4,6 +4,7 @@ import type Channel from './server/channel';
 import type Callbacks from './client/element';
 import type { dimensionProps, eventHandlers, elementProps, nodeProps } from './constants';
 import type Logger from './logger';
+import type { ChannelName } from './server/channel';
 
 declare global {
     // Plain object
@@ -66,8 +67,7 @@ declare global {
         data: any; // Entity data
         ui: UI; // UI object for creating components
         ref?: any; // Reference to extension-defined definitions
-        logger: Logger; // Logger instance
-        channel: Channel; // Channel instance
+        server: Server; // Server instance
     }
 
     // An extension module is a function that takes ExtensionAPI and returns new definitions
@@ -86,6 +86,9 @@ declare global {
     // Argument passed to element extension module function that defines HTML element callbacks
     type ElementExtension = Dict<Callbacks>;
 
+    // Channel event types
+    type ChannelEvent = 'open' | 'close' | 'message' | 'error';
+
     // Client constructor options
     interface ClientOptions {
         debug?: boolean; // whether to enable debug mode
@@ -95,6 +98,7 @@ declare global {
     interface ServerOptions {
         dur?: number; // global duration multiplier
         debug?: boolean; // whether to enable debug mode
-        channel?: string; // Channel type ('websocket' or 'worker')
+        channel?: ChannelName; // Base server type ('ws' or 'worker')
+        timeout?: number; // Maximum ping interval in ms before disconnecting client
     }
 }

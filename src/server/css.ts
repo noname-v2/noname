@@ -1,6 +1,6 @@
 import { isDict, toKebab } from "../utils";
 import { elementProps, dimensionProps } from "../constants";
-import type Logger from "../logger";
+import type Server from "./server";
 
 // Convert a CSSDict to a CSS string
 function toCSS(cssDict: CSSDict): string {
@@ -103,7 +103,7 @@ function toDimensionString(value: any): string {
 }
 
 // Convert ComponentProps to ElementProps
-export function propsToElement(props: ComponentProps, logger: Logger): ElementProps {
+export function propsToElement(props: ComponentProps, server: Server): ElementProps {
     const eprops = {} as any;
     
     // Copy properties that do not need conversion first
@@ -119,7 +119,7 @@ export function propsToElement(props: ComponentProps, logger: Logger): ElementPr
         if (key in dimensionProps) {
             eprops.style ??= {};
             if (key in eprops.style) {
-                logger.warn("Overriding existing style." + key);
+                server.warn("Overriding existing style." + key);
             }
             eprops.style[key] = key === 'aspectRatio' ? toRatioString(value) : toDimensionString(value);
         }

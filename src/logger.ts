@@ -1,5 +1,9 @@
 export default class Logger {
-    constructor(public debug = false) {}
+    constructor(public debug = false) {
+        if (debug) {
+            (globalThis as any).nn = this;
+        }
+    }
 
     log(message?: any, ...optionalParams: any[]) {
         if (this.debug) {

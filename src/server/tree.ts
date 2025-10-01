@@ -29,21 +29,11 @@ export default class Tree {
     // Reference to the Server instance
     #server: Server;
 
-    get unsynced() {
-        return this.#unsynced;
-    }
-
-    get resolving() {
-        return this.#resolving;
-    }
-
-    get resolved() {
-        return this.#resolved;
-    }
-
-    get rendering() {
-        return this.#rendering;
-    }
+    // Getters for Component class
+    get rendering() { return this.#rendering; }
+    get unsynced() { return this.#unsynced; }
+    get resolving() { return this.#resolving; }
+    get resolved() { return this.#resolved; }
 
     constructor(server: Server) {
         this.#server = server;
@@ -90,7 +80,7 @@ export default class Tree {
         if (!this.#pending || this.#syncing) {
             return;
         }
-        this.#server.logger.log("Syncing", this.#pending.size, "components");
+        this.#server.log("Syncing", this.#pending.size, "components");
         this.#syncing = true;
 
         // Components that have already been rendered in the current sync() call
@@ -154,14 +144,14 @@ export default class Tree {
             else if (typeof update === 'string') {
                 // Component moved or created
                 const tagName = (this.#server.lib.ref(cmp)?.native ? '' : 'nn-') + toKebab(this.#server.lib.tag(cmp)!);
-                updates[id] = [propsToElement(this.#server.lib.get(cmp, 'props'), this.#server.logger), update, tagName];
+                updates[id] = [propsToElement(this.#server.lib.get(cmp, 'props'), this.#server), update, tagName];
             }
             else if (isDict(update)) {
                 // Component properties updated
-                updates[id] = propsToElement(update, this.#server.logger);
+                updates[id] = propsToElement(update, this.#server);
             }
         }
-        this.#server.channel.broadcast(updates);
+        this.#server.broadcast(updates);
 
         // Cleanup
         this.#pending = null;
@@ -171,12 +161,12 @@ export default class Tree {
 
     // Attach component to root element.
     createRoot(cmp: Component) {
-        this.#server.channel.onmessage(msg => {
-            if (Array.isArray(msg)) {
-                // const [id, method, pos] = msg;
-                // const node = components.get(id); // from here: using entities.get(id) after making Component a subclass of Entity
-            }
-        });
+        // this.#server.channel.onmessage(msg => {
+        //     if (Array.isArray(msg)) {
+        //         // const [id, method, pos] = msg;
+        //         // const node = components.get(id); // from here: using entities.get(id) after making Component a subclass of Entity
+        //     }
+        // });
         this.tick(cmp, 'root');
     }
 
@@ -193,7 +183,7 @@ export default class Tree {
                 this.#pending.set(cmp, 'x');
             }
             else if (current === 'x') {
-                this.#server.logger.warn("Component already marked for deletion, cannot update.");
+                this.#server.warn("Component already marked for deletion, cannot update.");
             }
             else if (typeof update === 'string') {
                 // Apply queued props change immediately since parent is changed
@@ -213,7 +203,7 @@ export default class Tree {
                 apply(current, update);
             }
             else {
-                this.#server.logger.warn("Unknown update type: ", current, update);
+                this.#server.warn("Unknown update type: ", current, update);
             }
         }
         else {
@@ -235,12 +225,12 @@ export default class Tree {
     // Render a component by setting up context and calling its render() method
     #render(cmp: Component) {
         if (this.#rendering !== null || this.#resolved.size || this.#resolving.size) {
-            this.#server.logger.warn("An component is already being rendered: " +
+            this.#server.warn("An component is already being rendered: " +
                 this.#server.lib.tag(this.#rendering) + this.#server.lib.id(this.#rendering) + " <- " +
                 this.#server.lib.tag(cmp) + this.#server.lib.id(cmp));
             return;
         }
-        this.#server.logger.log("Rendering", this.#server.lib.tag(cmp), this.#server.lib.id(cmp));
+        this.#server.log("Rendering", this.#server.lib.tag(cmp), this.#server.lib.id(cmp));
 
         // Setup render environment
         this.#rendering = cmp;
@@ -255,7 +245,7 @@ export default class Tree {
 
         // Cleanup
         if (this.#resolving.size || this.#resolved.size !== n) {
-            this.#server.logger.warn(`Unmatched components after render(): ${this.#resolving.size} unresolved, ${this.#resolved.size} resolved, total ${n}`);
+            this.#server.warn(`Unmatched components after render(): ${this.#resolving.size} unresolved, ${this.#resolved.size} resolved, total ${n}`);
             this.#resolving.clear();
         }
         this.#resolved.clear();

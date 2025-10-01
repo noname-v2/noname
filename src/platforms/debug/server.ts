@@ -1,7 +1,8 @@
 import Base from '../../server/server';
 
 export default class Server extends Base {
-    constructor(options = {debug: true}) {
+    constructor(options: ServerOptions = {}) {
+        options.debug = true;
         super(options);
     }
 }

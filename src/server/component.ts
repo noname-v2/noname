@@ -30,7 +30,7 @@ export default class Component {
     // Reference to the Server instance
     #server: Server;
 
-    constructor({ data, init, ui, logger }: EntityAPI, server: Server,
+    constructor({ data, init, ui, server }: EntityAPI,
         ...args: (string | number | Component | Component[] | Partial<ComponentProps>)[]) {
         // Initialize component properties
         this.#data = data;
@@ -78,7 +78,7 @@ export default class Component {
         }
 
         if (data.props.innerHTML && data.children.length > 0) {
-            logger.warn("Component cannot have both innerHTML and children, removing innerHTML.");
+            server.warn("Component cannot have both innerHTML and children, removing innerHTML.");
             data.props.innerHTML = null;
         }
     }
@@ -112,17 +112,17 @@ export default class Component {
 
     // Append a component to its children (single target).
     #append(target: Component) {
-        this.#server.logger.log("Appending component", this.#server.lib.id(target), "to", this.#server.lib.id(this));
+        this.#server.log("Appending component", this.#server.lib.id(target), "to", this.#server.lib.id(this));
         const rendering = this.#server.tree.rendering;
 
         if (this.#data.props.innerHTML) {
-            this.#server.logger.warn("Component cannot have both innerHTML and children, skipping append().");
+            this.#server.warn("Component cannot have both innerHTML and children, skipping append().");
             return;
         }
 
         if (target.#data.parent) {
             if (target.#data.source !== rendering) {
-                this.#server.logger.warn("Component can only be moved from the same context as where it is created.", this, target);
+                this.#server.warn("Component can only be moved from the same context as where it is created.", this, target);
                 return;
             }
             // Remove from previous parent only if created from the same render() context
@@ -152,7 +152,7 @@ export default class Component {
 
                     // Remove temporary component
                     this.#server.tree.tick(target, 'x');
-                    this.#server.logger.log(`Reusing component <${this.#server.lib.tag(child)}> id=${this.#server.lib.id(child)}`);
+                    this.#server.log(`Reusing component <${this.#server.lib.tag(child)}> id=${this.#server.lib.id(child)}`);
                     return;
                 }
             }
@@ -186,7 +186,7 @@ export default class Component {
     #detach() {
         const rendering = this.#server.tree.rendering;
         if (this.#data.source !== rendering) {
-            this.#server.logger.warn("Component can only be detached from the same context as where it is created", this, rendering);
+            this.#server.warn("Component can only be detached from the same context as where it is created", this, rendering);
             return false;
         }
         if (this.#data.parent) {

@@ -95,11 +95,10 @@ export default class Library {
         const api: EntityAPI = {
             data,
             ui: this.#server.ui,
-            logger: this.#server.logger,
-            channel: this.#server.channel,
+            server: this.#server,
             init: target => {
                 // Save entity info
-                this.#server.logger.log(`Created ${type} with tag=${tag}, id=${id}`);
+                this.#server.log(`Created ${type} with tag=${tag}, id=${id}`);
                 this.#instances.set(target, [id, type, tag, data]);
                 return false;
             },

@@ -1,5 +1,6 @@
 import { apply } from '../utils';
 import type Client from "./client";
+import type Channel from "./channel";
 
 // Type for point events (mouse/touch)
 type PointEvent = MouseEvent | Touch;
@@ -8,6 +9,7 @@ type PointEvent = MouseEvent | Touch;
 export default class View {
     // Reference to client object
     #client: Client;
+    #channel: Channel;
 
     // Reference width and height of root element
     #refWidth = 960;
@@ -35,9 +37,10 @@ export default class View {
     // Temporarily disable event trigger after pointerup to prevent unintended clicks.
     #dispatched = false;
 
-    constructor(root: HTMLElement, client: Client) {
+    constructor(root: HTMLElement, client: Client, channel: Channel) {
         this.#root = root;
         this.#client = client;
+        this.#channel = channel;
         this.resize();
         window.addEventListener('resize', () => this.resize(), { passive: true });
 
@@ -99,7 +102,7 @@ export default class View {
         if (!binding) {
             return;
         }
-        this.#client.logger.log('Mouse down', binding, e);
+        this.#client.log('Mouse down', binding, e);
 
         const [_, handler, down] = binding;
         const origin = this.#locate(e);
@@ -130,7 +133,7 @@ export default class View {
     }
 
     #dispatchUp() {
-        this.#client.logger.log('Mouse up');
+        this.#client.log('Mouse up');
         if (this.#dispatched === false) {
             // dispatch events
             if (this.#clicking) {
@@ -156,17 +159,17 @@ export default class View {
 
         if (handler.onClick && !this.#clicking[2]) {
             // trigger left click
-            this.#client.logger.log('Mouse click', id, handler.onClick, this.#clicking[1]);
-            this.#client.send([id, handler.onClick, this.#clicking[1]]);
+            this.#client.log('Mouse click', id, handler.onClick, this.#clicking[1]);
+            this.#channel.send([id, handler.onClick, this.#clicking[1]]);
         }
         else if (handler.onRightClick && this.#clicking[2]) {
             // trigger right click
-            this.#client.logger.log('Mouse click', id, handler.onRightClick, this.#clicking[1]);
-            this.#client.send([id, handler.onRightClick, this.#clicking[1]]);
+            this.#client.log('Mouse click', id, handler.onRightClick, this.#clicking[1]);
+            this.#channel.send([id, handler.onRightClick, this.#clicking[1]]);
         }
         else {
             // no handler
-            this.#client.logger.log('Mouse click', id, 'no handler');
+            this.#client.log('Mouse click', id, 'no handler');
         }
 
         // avoid duplicate trigger
@@ -245,9 +248,5 @@ export default class View {
         this.#root.style.setProperty('--zoom-height', h + 'px');
         this.#root.style.setProperty('--zoom-scale', z.toString());
         this.#zoom = z;
-    }
-
-    send(msg: any) {
-        this.#client.send(msg);
     }
 }

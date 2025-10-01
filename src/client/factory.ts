@@ -1,4 +1,5 @@
 import View from './view';
+import Channel from './channel';
 import { isDict, apply } from "../utils";
 import { createElement } from "./element";
 import type Client from "./client";
@@ -24,7 +25,7 @@ export default class Factory {
     // All created elements (id -> HTMLElement)
     #elements = new Map<string, HTMLElement>();
 
-    constructor(root: HTMLElement, client: Client) {
+    constructor(root: HTMLElement, client: Client, src: string) {
         // Set root element and client
         this.#elements.set('root', root);
         this.#client = client;
@@ -32,8 +33,13 @@ export default class Factory {
         // Add style element to document head
         document.head.appendChild(this.#style);
 
+        // Create communication channel
+        const channel = new Channel(src);
+        channel.on('message', data => this.onmessage(data));
+        channel.on('error', e => this.reload(e));
+
         // Initialize the size of root element
-        this.#view = new View(root, client);
+        this.#view = new View(root, client, channel);
     }
 
     // handle messages from worker / server
@@ -61,7 +67,7 @@ export default class Factory {
                         toUnlink.add(id);
                     }
                     else if (this.#elements.has(id)) {
-                        this.#client.logger.warn('Removing detached element', id);
+                        this.#client.warn('Removing detached element', id);
                         this.#elements.get(id)!.remove();
                         this.#elements.delete(id);
                     }
@@ -98,7 +104,7 @@ export default class Factory {
                     toUpdate.set(id, tick);
                 }
                 else {
-                    this.#client.logger.warn('Updating non-existing element', id);
+                    this.#client.warn('Updating non-existing element', id);
                 }
             }
         }
@@ -112,7 +118,7 @@ export default class Factory {
             }
             else if (parentId !== '-') {
                 // Mark for removal if parent does not exist
-                this.#client.logger.warn('Parent not found for element', id, ', removing it.');
+                this.#client.warn('Parent not found for element', id, ', removing it.');
                 toUnlink.add(id);
             }
         }
@@ -163,7 +169,7 @@ export default class Factory {
                     this.#elements.get(id)!.appendChild(this.#elements.get(childId)!);
                 }
                 else {
-                    this.#client.logger.warn('Child element', childId, 'not found when appending to', id);
+                    this.#client.warn('Child element', childId, 'not found when appending to', id);
                 }
                 if (toAdd.has(childId)) {
                     // children of this element will be appended in the toAdd.keys().forEach(...) loop
@@ -239,16 +245,12 @@ export default class Factory {
             apply(elem.style, props.style);
         }
         // from here: actually update styles by ElementProps
-        this.#client.logger.log(this.#global_duration);
-    }
-
-    send(msg: any) {
-        this.#client.send(msg);
+        this.#client.log(this.#global_duration);
     }
 
     reload(e?: unknown) {
         // TODO: reload the entire UI
-        this.#client.logger.error('Worker error:', e);
+        this.#client.error('Worker error:', e);
     }
 
     onmessage(data: any) {
