@@ -31,6 +31,23 @@ export default class Library {
     // [3]: entity data
     #instances = new WeakMap<any, [string, string, string | null, Dict<any>]>();
 
+    // Set of components for client initialization
+    #components = new Set<Component>();
+
+    // UI object for creating components
+    #ui = new Proxy(this.refs('component'), {
+        get: (target, tag: string) => {
+            if (!(tag in target)) {
+                target[tag] = { native: true };
+            }
+            return ((...args) => this.create('component', tag, ...args)) as UI[string];
+        }
+    }) as UI;
+
+    // Getter component objects
+    get components() { return this.#components; }
+    get ui() { return this.#ui; }
+
     constructor(server: Server) {
         this.#server = server;
         // Load built-in extensions
@@ -46,7 +63,8 @@ export default class Library {
 
     // Delete the reference to an entity
     delete(target: any) {
-        return this.#instances.delete(target);
+        this.#instances.delete(target);
+        this.#components.delete(target);
     }
 
     // Get ID of an entity
@@ -94,12 +112,15 @@ export default class Library {
         const id = (this.#count++).toString();
         const api: EntityAPI = {
             data,
-            ui: this.#server.ui,
+            ui: this.#ui,
             server: this.#server,
             init: target => {
                 // Save entity info
                 this.#server.log(`Created ${type} with tag=${tag}, id=${id}`);
                 this.#instances.set(target, [id, type, tag, data]);
+                if (type === 'component') {
+                    this.#components.add(target);
+                }
                 return false;
             },
         };

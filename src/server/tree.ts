@@ -8,6 +8,9 @@ export default class Tree {
     // Component currently being rendered.
     #rendering: Component | null = null;
 
+    // Root component
+    #root!: Component;
+
     // A sync() operation is in progress.
     #syncing = false;
 
@@ -85,12 +88,13 @@ export default class Tree {
 
         // Components that have already been rendered in the current sync() call
         const rendered = new Set<Component>();
+        const lib = this.#server.lib;
 
         while (true) {
             // Remove references to unlinked components
             const toUnlink = new Set<Component>();
             for (const [cmp, update] of this.#pending) {
-                if (this.#server.lib.has(cmp) && update === 'x') {
+                if (lib.has(cmp) && update === 'x') {
                     toUnlink.add(cmp);
                 }
             }
@@ -101,7 +105,7 @@ export default class Tree {
             // Find components that need to be rendered (created, moved or custom properties updated)
             const toRender = new Set<Component>();
             for (const [cmp, update] of this.#pending) {
-                if (rendered.has(cmp) || !this.#server.lib.has(cmp)) {
+                if (rendered.has(cmp) || !lib.has(cmp)) {
                     continue;
                 }
                 if (typeof update === 'string') {
@@ -109,7 +113,7 @@ export default class Tree {
                 }
                 else if (isDict(update)) {
                     // Remove unchanged property updates
-                    this.#filterUpdate(this.#server.lib.get(cmp, 'props'), update);
+                    this.#filterUpdate(update, lib.get(cmp, 'props'));
 
                     // Render component if there are custom properties to update
                     for (const key in update) {
@@ -136,19 +140,20 @@ export default class Tree {
         // Sync to main thread
         const updates: ClientUpdate = {};
         for (const [cmp, update] of this.#pending) {
-            const id = this.#server.lib.id(cmp);
+            const id = lib.id(cmp);
             if (update === 'x') {
                 // Component deleted
                 updates[id] = 'x';
             }
             else if (typeof update === 'string') {
                 // Component moved or created
-                const tagName = (this.#server.lib.ref(cmp)?.native ? '' : 'nn-') + toKebab(this.#server.lib.tag(cmp)!);
-                updates[id] = [propsToElement(this.#server.lib.get(cmp, 'props'), this.#server), update, tagName];
+                const tagName = (lib.ref(cmp)?.native ? '' : 'nn-') + toKebab(lib.tag(cmp)!);
+                updates[id] = [propsToElement(lib.get(cmp, 'props'), this.#server), update, tagName];
             }
             else if (isDict(update)) {
                 // Component properties updated
                 updates[id] = propsToElement(update, this.#server);
+                apply(lib.get(cmp, 'props'), update);
             }
         }
         this.#server.broadcast(updates);
@@ -156,6 +161,20 @@ export default class Tree {
         // Cleanup
         this.#pending = null;
         this.#syncing = false;
+    }
+
+    init(id: string, css: string) {
+        const msg: any = { css: css };
+        const lib = this.#server.lib;
+        for (const cmp of lib.components) {
+            const tagName = (lib.ref(cmp)?.native ? '' : 'nn-') + toKebab(lib.tag(cmp)!);
+            msg[lib.id(cmp)] = [propsToElement(lib.get(cmp, 'props'), this.#server), lib.id(lib.get(cmp, 'parent')) ?? '-', tagName];
+            if (cmp === this.#root) {
+                msg[lib.id(cmp)][1] = 'root';
+            }
+        }
+        this.#server.log('Sending init data to', id, msg);
+        this.#server.send(id, msg);
     }
 
 
@@ -167,6 +186,7 @@ export default class Tree {
         //         // const node = components.get(id); // from here: using entities.get(id) after making Component a subclass of Entity
         //     }
         // });
+        this.#root = cmp;
         this.tick(cmp, 'root');
     }
 
@@ -224,19 +244,20 @@ export default class Tree {
 
     // Render a component by setting up context and calling its render() method
     #render(cmp: Component) {
+        const lib = this.#server.lib;
         if (this.#rendering !== null || this.#resolved.size || this.#resolving.size) {
             this.#server.warn("An component is already being rendered: " +
-                this.#server.lib.tag(this.#rendering) + this.#server.lib.id(this.#rendering) + " <- " +
-                this.#server.lib.tag(cmp) + this.#server.lib.id(cmp));
+                lib.tag(this.#rendering) + lib.id(this.#rendering) + " <- " +
+                lib.tag(cmp) + lib.id(cmp));
             return;
         }
-        this.#server.log("Rendering", this.#server.lib.tag(cmp), this.#server.lib.id(cmp));
+        this.#server.log("Rendering", lib.tag(cmp), lib.id(cmp));
 
         // Setup render environment
         this.#rendering = cmp;
         this.#unresolve(cmp);
         const n = this.#resolving.size;
-        this.#server.lib.ref(cmp)?.render?.call(cmp, this.#server.ui);
+        lib.ref(cmp)?.render?.call(cmp, lib.ui);
 
         // Remove outdated children
         for (const child of this.#resolving) {

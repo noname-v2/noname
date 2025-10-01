@@ -1,4 +1,4 @@
-import { isDict, toKebab } from "../utils";
+import { isDict, toKebab, copy } from "../utils";
 import { elementProps, dimensionProps } from "../constants";
 import type Server from "./server";
 
@@ -109,7 +109,7 @@ export function propsToElement(props: ComponentProps, server: Server): ElementPr
     // Copy properties that do not need conversion first
     for (const key in props) {
         if (key in elementProps) {
-            eprops[key] = props[key];
+            eprops[key] = copy(props[key]);
         }
     }
 

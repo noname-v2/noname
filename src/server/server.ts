@@ -33,20 +33,9 @@ export default class Server extends Logger {
     // Virtual DOM tree
     #tree = new Tree(this);
 
-    // UI object for creating components
-    #ui = new Proxy(this.lib.refs('component'), {
-        get: (target, tag: string) => {
-            if (!(tag in target)) {
-                target[tag] = { native: true };
-            }
-            return ((...args) => this.lib.create('component', tag, ...args)) as UI[string];
-        }
-    }) as UI;
-
     // Getters for classes in ./server folder
     get lib() { return this.#lib; }
     get tree() { return this.#tree; }
-    get ui() { return this.#ui; }
 
     constructor(public options: ServerOptions = {channel: 'worker'}) {
         super(options.debug);
@@ -69,9 +58,7 @@ export default class Server extends Logger {
             this.log('Message from', client.id, msg);
             if (msg === 'init') {
                 this.#clients.set(client.id, client);
-                const msg = {css: this.#css};
-                this.log('Sending init data to', client.id, msg);
-                client.send(msg);
+                this.#tree.init(client.id, this.#css);
             }
         });
     }
@@ -85,7 +72,7 @@ export default class Server extends Logger {
         this.#channel.add(this.#options.channel || this.type);
 
         // Initialize the root stage and component
-        this.tree.createRoot(this.ui.app());
+        this.tree.createRoot(this.lib.ui.app());
         this.#css = getStyleString(this.lib.refs('component'));
         // from here: init stages, load state, etc.
     }

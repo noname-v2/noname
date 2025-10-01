@@ -14,6 +14,26 @@ export function apply(to: Dict<any>, from: Dict<any>, exclude?: string[]): Dict<
     return to;
 }
 
+/** Deep copy a Dict or return original object. */
+export function copy(from: any, exclude?: string[]): Dict<any> {
+    if (!isDict(from)) {
+        return from;
+    }
+    const to: Dict<any> = {};
+    for (const key in from) {
+        if (exclude?.includes(key)) {
+            continue;
+        }
+        else if (isDict(from[key])) {
+            to[key] = copy(from[key]);
+        }
+        else if (from[key] !== undefined) {
+            to[key] = from[key];
+        }
+    }
+    return to;
+}
+
 /** Generate a unique string based on current Date.now().
  * Mapping: Date.now(): [0-9] -> [0-62] -> [A-Z] | [a-z] | [0-9]
  */

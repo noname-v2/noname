@@ -112,8 +112,10 @@ export default class Component {
 
     // Append a component to its children (single target).
     #append(target: Component) {
-        this.#server.log("Appending component", this.#server.lib.id(target), "to", this.#server.lib.id(this));
-        const rendering = this.#server.tree.rendering;
+        const lib = this.#server.lib;
+        const tree = this.#server.tree;
+        this.#server.log("Appending component", lib.id(target), "to", lib.id(this));
+        const rendering = tree.rendering;
 
         if (this.#data.props.innerHTML) {
             this.#server.warn("Component cannot have both innerHTML and children, skipping append().");
@@ -126,7 +128,7 @@ export default class Component {
                 return;
             }
             // Remove from previous parent only if created from the same render() context
-            const children = target.#data.parent.#data.children;
+            const children = lib.get(lib.get(target, 'parent'), 'children');
             if (children.includes(target)) {
                 children.splice(children.indexOf(target), 1);
             }
@@ -136,32 +138,32 @@ export default class Component {
             // Match existing child if possible (only in a render() context)
             for (const child of this.#data.children) {
                 // Match by source, tag and slot
-                if (this.#server.tree.resolving.has(child) && !this.#server.tree.resolved.has(child) && this.#match(child, target)) {
-                    this.#server.tree.resolved.add(child);
-                    this.#server.tree.resolving.delete(child);
+                if (tree.resolving.has(child) && !tree.resolved.has(child) && this.#match(child, target)) {
+                    tree.resolved.add(child);
+                    tree.resolving.delete(child);
 
                     // match child elements
-                    for (const targetChild of this.#server.lib.get(target, 'children')) {
-                        if (this.#server.lib.get(targetChild, 'source') === rendering) {
+                    for (const targetChild of lib.get(target, 'children')) {
+                        if (lib.get(targetChild, 'source') === rendering) {
                             child.append(targetChild);
                         }
                     }
 
                     // update child props
-                    this.#server.tree.tick(child, target.#data.props);
+                    tree.tick(child, target.#data.props);
 
                     // Remove temporary component
-                    this.#server.tree.tick(target, 'x');
-                    this.#server.log(`Reusing component <${this.#server.lib.tag(child)}> id=${this.#server.lib.id(child)}`);
+                    tree.tick(target, 'x');
+                    this.#server.log(`Reusing component <${lib.tag(child)}> id=${lib.id(child)}`);
                     return;
                 }
             }
         }
 
         // create new child when no existing child match
-        this.#server.tree.tick(target, this.#server.lib.id(this));
+        tree.tick(target, lib.id(this));
         this.#data.children.push(target);
-        this.#server.lib.set(target, 'parent', this);
+        lib.set(target, 'parent', this);
     }
 
     // Remove a component and clear its references.
