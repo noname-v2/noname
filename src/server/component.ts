@@ -184,6 +184,21 @@ export default class Component {
         }
     }
 
+    // Update component properties.
+    update(update: ComponentProps) {
+        this.#server.tree.tick(this, update);
+    }
+
+    // Set component property
+    set(key: string, value: any) {
+        this.update({ [key]: value });
+    }
+
+    // Get component property
+    get(key: string) {
+        return this.#data.props[key];
+    }
+
     // Remove reference from parent
     #detach() {
         const rendering = this.#server.tree.rendering;

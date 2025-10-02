@@ -2,6 +2,7 @@ import type Component from './server/component';
 import type Stage from './server/stage';
 import type Channel from './server/channel';
 import type Callbacks from './client/element';
+import type Server from './server/server';
 import type { dimensionProps, eventHandlers, elementProps, nodeProps } from './constants';
 import type Logger from './logger';
 import type { ChannelName } from './server/channel';

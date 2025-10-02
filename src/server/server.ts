@@ -37,7 +37,7 @@ export default class Server extends Logger {
     get lib() { return this.#lib; }
     get tree() { return this.#tree; }
 
-    constructor(public options: ServerOptions = {channel: 'worker'}) {
+    constructor(public options: ServerOptions = {}) {
         super(options.debug);
         this.#options = options;
 
