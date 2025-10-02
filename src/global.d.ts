@@ -10,7 +10,7 @@ import type { ChannelName } from './server/channel';
 declare global {
     // Plain object
     type Plain = number | string | boolean | null | Plain[] | { [key: string]: Plain };
-    type Dict<T = Plain> = { [key: string]: T };
+    type Dict<T = any> = { [key: string]: T };
 
     // CSS declaration
     type CSSDict = Partial<CSSStyleDeclaration> | { [key: string]: CSSDict };
@@ -58,7 +58,8 @@ declare global {
 
     //  Stage type
     interface StageDefinition {
-        run?: (this: Stage, ...args: any[]) => Promise<void> | void;
+        run?: (this: Stage, ...args: any[]) => Promise<any> | any; // Main execution function
+        loop?: (this: Stage, ...args: any[]) => Promise<boolean> | boolean; // Looping function, return true to continue looping
     }
 
     // Initialization function for the data of Entity / Component / Stage
@@ -74,13 +75,13 @@ declare global {
     interface Extension {
         component?: Dict<ComponentDefinition>;
         stage?: Dict<StageDefinition>;
-        hero?: Dict<any>;
-        card?: Dict<any>;
-        skill?: Dict<any>;
-        token?: Dict<any>;
-        permanent?: Dict<any>;
-        entity?: (api: any) => Dict<any>;
-        [key: string]: Dict<any>;
+        hero?: Dict;
+        card?: Dict;
+        skill?: Dict;
+        token?: Dict;
+        permanent?: Dict;
+        entity?: (api: any) => Dict;
+        [key: string]: Dict;
     }
 
     // Argument passed to element extension module function that defines HTML element callbacks

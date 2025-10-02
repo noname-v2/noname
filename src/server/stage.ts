@@ -14,7 +14,7 @@ const stageStatus = {
 export default class Stage {
     #data: {
         args: any[];
-        props: Dict<any>;
+        props: Dict;
         children: Stage[];
         parent: Stage | null;
         source: Stage | null;

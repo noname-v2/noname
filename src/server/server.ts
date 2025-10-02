@@ -1,10 +1,4 @@
-
-
-// import { createRoot, config } from './tree';
-// import { toKebab } from "../utils";
-// import { getMaker, toCSS, defaultCSS } from "./component";
 import Logger from '../logger';
-// import Component from "./component";
 import Channel from './channel';
 import Library from './library';
 import Tree from './tree';
@@ -33,7 +27,7 @@ export default class Server extends Logger {
     // Virtual DOM tree
     #tree = new Tree(this);
 
-    // Getters for classes in ./server folder
+    // Expose objects useful for entities
     get lib() { return this.#lib; }
     get ui() { return this.#tree.ui; }
 

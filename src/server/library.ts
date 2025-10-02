@@ -16,7 +16,7 @@ export default class Library {
     #count = 1;
 
     // Dict of type name -> entity class
-    #classes: Dict<any> = {
+    #classes: Dict = {
         component: Component,
         stage: Stage,
     };
@@ -29,7 +29,7 @@ export default class Library {
     // [1]: entity type
     // [2]: tag name to locate the entity definition given the type
     // [3]: entity data
-    #instances = new WeakMap<any, [string, string, string | null, Dict<any>]>();
+    #instances = new WeakMap<any, [string, string, string | null, Dict]>();
 
     constructor(server: Server) {
         this.#server = server;

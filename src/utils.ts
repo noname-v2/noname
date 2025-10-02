@@ -1,5 +1,5 @@
 /** Merge two objects. */
-export function apply(to: Dict<any>, from: Dict<any>, exclude?: string[]): Dict<any> {
+export function apply(to: Dict, from: Dict, exclude?: string[]): Dict {
     for (const key in from) {
         if (exclude?.includes(key)) {
             continue;
@@ -15,11 +15,11 @@ export function apply(to: Dict<any>, from: Dict<any>, exclude?: string[]): Dict<
 }
 
 /** Deep copy a Dict or return original object. */
-export function copy(from: any, exclude?: string[]): Dict<any> {
+export function copy(from: any, exclude?: string[]): Dict {
     if (!isDict(from)) {
         return from;
     }
-    const to: Dict<any> = {};
+    const to: Dict = {};
     for (const key in from) {
         if (exclude?.includes(key)) {
             continue;
