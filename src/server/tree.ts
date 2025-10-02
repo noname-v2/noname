@@ -29,8 +29,14 @@ export default class Tree {
     // Components already matched with a new Component from render()
     #resolved = new Set<Component>();
 
+    // Set of components for client initialization
+    #components = new Set<Component>();
+
     // Reference to the Server instance
     #server: Server;
+
+    // UI object for creating components
+    #ui!: UI;
 
     // Getters for Component class
     get rendering() { return this.#rendering; }
@@ -38,8 +44,23 @@ export default class Tree {
     get resolving() { return this.#resolving; }
     get resolved() { return this.#resolved; }
 
+    // Getter for UI object for Server
+    get ui() { return this.#ui; }
+
     constructor(server: Server) {
         this.#server = server;
+        this.#ui = new Proxy(server.lib.refs('component'), {
+            get: (target, tag: string) => {
+                if (!(tag in target)) {
+                    target[tag] = { native: true };
+                }
+                return ((...args) => {
+                    const cmp = server.lib.create('component', tag, this, ...args);
+                    this.#components.add(cmp);
+                    return cmp;
+                }) as UI[string];
+            }
+        });
     }
 
     // Clear references of a component and its children
@@ -60,6 +81,7 @@ export default class Tree {
 
         // Clear its own references
         this.#server.lib.delete(cmp);
+        this.#components.delete(cmp);
     }
 
     // Compare updates with current properties and remove unchanged entries
@@ -166,7 +188,7 @@ export default class Tree {
     init(id: string, css: string) {
         const msg: any = { css: css };
         const lib = this.#server.lib;
-        for (const cmp of lib.components) {
+        for (const cmp of this.#components) {
             const tagName = (lib.ref(cmp)?.native ? '' : 'nn-') + toKebab(lib.tag(cmp)!);
             msg[lib.id(cmp)] = [propsToElement(lib.get(cmp, 'props'), this.#server), lib.id(lib.get(cmp, 'parent')) ?? '-', tagName];
             if (cmp === this.#root) {
@@ -257,7 +279,7 @@ export default class Tree {
         this.#rendering = cmp;
         this.#unresolve(cmp);
         const n = this.#resolving.size;
-        lib.ref(cmp)?.render?.call(cmp, lib.ui);
+        lib.ref(cmp)?.render?.call(cmp, this.#ui);
 
         // Remove outdated children
         for (const child of this.#resolving) {

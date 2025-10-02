@@ -35,7 +35,7 @@ export default class Server extends Logger {
 
     // Getters for classes in ./server folder
     get lib() { return this.#lib; }
-    get tree() { return this.#tree; }
+    get ui() { return this.#tree.ui; }
 
     constructor(public options: ServerOptions = {}) {
         super(options.debug);
@@ -72,7 +72,7 @@ export default class Server extends Logger {
         this.#channel.add(this.#options.channel || this.type);
 
         // Initialize the root stage and component
-        this.tree.createRoot(this.lib.ui.app());
+        this.#tree.createRoot(this.ui.app());
         this.#css = getStyleString(this.lib.refs('component'));
         // from here: init stages, load state, etc.
     }

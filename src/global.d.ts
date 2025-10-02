@@ -66,7 +66,6 @@ declare global {
     interface EntityAPI {
         init: (target: any) => boolean; // Initializes and returns whether entity is restored from previous state
         data: any; // Entity data
-        ui: UI; // UI object for creating components
         ref?: any; // Reference to extension-defined definitions
         server: Server; // Server instance
     }

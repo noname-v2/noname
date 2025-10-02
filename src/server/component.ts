@@ -1,6 +1,7 @@
 import translate from "./locale";
 import { isDict, apply } from "../utils";
 import type Server from "./server";
+import type Tree from "./tree";
 
 // From here: consider only keeping base Component and Stage class?
 // Component callbacks only have two types:
@@ -30,11 +31,15 @@ export default class Component {
     // Reference to the Server instance
     #server: Server;
 
-    constructor({ data, init, ui, server }: EntityAPI,
+    // Reference to the Tree instance
+    #tree: Tree;
+
+    constructor({ data, init, server }: EntityAPI, tree: Tree,
         ...args: (string | number | Component | Component[] | Partial<ComponentProps>)[]) {
         // Initialize component properties
         this.#data = data;
         this.#server = server;
+        this.#tree = tree;
 
         if (init(this)) {
             // Restored from saved state and does not need initialization
@@ -45,11 +50,11 @@ export default class Component {
         data.props = {};
         data.children = [];
         data.parent = null;
-        data.source = server.tree.rendering;
+        data.source = tree.rendering;
 
         // Label that the component is not yet synced to clients
-        server.tree.unsynced.add(this);
-        server.tree.tick(this, '-')
+        tree.unsynced.add(this);
+        tree.tick(this, '-')
 
         // Process arguments
         for (const arg of args) {
@@ -69,7 +74,7 @@ export default class Component {
             }
             else if (typeof arg === "string") {
                 // Append text node
-                this.append(ui.span({ innerHTML: translate(arg) }));
+                this.append(server.ui.span({ innerHTML: translate(arg) }));
             }
             else if (typeof arg === "number") {
                 // Slot index, to be handled by parent component
@@ -113,7 +118,7 @@ export default class Component {
     // Append a component to its children (single target).
     #append(target: Component) {
         const lib = this.#server.lib;
-        const tree = this.#server.tree;
+        const tree = this.#tree;
         this.#server.log("Appending component", lib.id(target), "to", lib.id(this));
         const rendering = tree.rendering;
 
@@ -169,24 +174,24 @@ export default class Component {
     // Remove a component and clear its references.
     unlink() {
         if (this.#detach()) {
-            if (this.#server.tree.resolving.has(this)) {
-                this.#server.tree.resolved.add(this);
-                this.#server.tree.resolving.delete(this);
+            if (this.#tree.resolving.has(this)) {
+                this.#tree.resolved.add(this);
+                this.#tree.resolving.delete(this);
             }
-            this.#server.tree.tick(this, 'x');
+            this.#tree.tick(this, 'x');
         }
     }
 
     // Remove a component but keep its reference.
     detach() {
         if (this.#detach()) {
-            this.#server.tree.tick(this, '-');
+            this.#tree.tick(this, '-');
         }
     }
 
     // Update component properties.
     update(update: ComponentProps) {
-        this.#server.tree.tick(this, update);
+        this.#tree.tick(this, update);
     }
 
     // Set component property
@@ -201,7 +206,7 @@ export default class Component {
 
     // Remove reference from parent
     #detach() {
-        const rendering = this.#server.tree.rendering;
+        const rendering = this.#tree.rendering;
         if (this.#data.source !== rendering) {
             this.#server.warn("Component can only be detached from the same context as where it is created", this, rendering);
             return false;
