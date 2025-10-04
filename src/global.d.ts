@@ -59,7 +59,9 @@ declare global {
     //  Stage type
     interface StageDefinition {
         run?: (this: Stage, ...args: any[]) => Promise<any> | any; // Main execution function
-        loop?: (this: Stage, ...args: any[]) => Promise<boolean> | boolean; // Looping function, return true to continue looping
+        seq?: string[]; // Sequence of sub-stages to be executed in order
+        silent?: boolean; // Do not trigger any event
+        sub?: Dict<StageDefinition>; // Sub-stages
     }
 
     // Initialization function for the data of Entity / Component / Stage

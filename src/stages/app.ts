@@ -1,7 +1,16 @@
 export default {
-    stages: {
+    stage: {
         app: {
-            run() {}
+            run() {
+                // this.test();
+            },
+            sub: {
+                a: {
+                    run() {
+                        // this.check()
+                    }
+                }
+            }
         },
     }
 } as Extension;

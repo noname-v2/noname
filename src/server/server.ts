@@ -2,6 +2,7 @@ import Logger from '../logger';
 import Channel from './channel';
 import Library from './library';
 import Tree from './tree';
+import { apply } from '../utils';
 import { getStyleString } from './css';
 import type { RemoteClient, ChannelName } from './channel';
 
@@ -34,6 +35,13 @@ export default class Server extends Logger {
     constructor(public options: ServerOptions = {}) {
         super(options.debug);
         this.#options = options;
+        if (options.debug) {
+            apply(this as any, {
+                tree: this.#tree,
+                clients: this.#clients,
+                options: this.#options,
+            });
+        }
 
         // Handle new client connections
         this.#channel.on('open', (client) => {

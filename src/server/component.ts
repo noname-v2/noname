@@ -26,6 +26,7 @@ export default class Component {
         children: Component[];
         parent: Component | null;
         source: Component | null;
+        link?: any; // Link to an entity (e.g. card, skill)
     };
 
     // Reference to the Server instance
