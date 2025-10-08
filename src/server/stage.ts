@@ -1,20 +1,15 @@
-// import type Server from "./server";
+import type Server from "./server";
 import { apply, copy } from "../utils";
 
-const stageStatus = [
-    'none', // 0: Not started
-    'before', // 1: Pre-stage, go to 'after' if skip() is called, otherwise, go to 'begin'
-    'begin', // 2: Stage started
-    'main', // 3: Main execution
-    'childBefore', // 4: Before child stage starts
-    'childBegin', // 5: Child stage started
-    'childMain', // 6: Child stage main execution
-    'childEnd', // 7: Child stage ended
-    'childAfter', // 8: After child stage ends
-    'end', // 9: Finalization after main is completed
-    'after', // 10: After main event is done / skipped
-    'done' // 11: End state
- ] as const;
+export enum StageStatus {
+    None = 0, // Not started
+    Before = 1, // Pre-stage, go to 'after' if skip() is called, otherwise, go to 'begin'
+    Begin = 2, // Stage started
+    Main = 3, // Main execution
+    End = 4, // Finalization after main is completed
+    After = 5, // After main event is done / skipped
+    Done = 6 // End state
+}
 
 export default class Stage {
     #data: {
@@ -24,20 +19,24 @@ export default class Stage {
         running: Stage[]; // Stack of currently running child stages
         parent: Stage | null;
         source: Stage | null;
-        status: number; // Index in stageStatus
+        status: StageStatus; // Index in stageStatus
         step: number; // Current step in running[]
         result?: Dict; // Return value of run(), null if stage not finished
         cancelled?: true; // Whether the stage ends early because condition is no longer met, e.g. draw 0 cards or target died
         skipped?: true; // Whether the stage is skipped (called in the before step)
         executing?: string; // Name of the current executing function if not main
+        toExecute?: string; // Name of the function to execute next
     };
 
-    // // Reference to the Server instance
-    // #server: Server;
+    // Reference to the Server instance
+    #server: Server;
+    get server() {
+        return this.#server;
+    }
 
     // Stage status
     get status() {
-        return stageStatus[this.#data.status];
+        return StageStatus[this.#data.status];
     }
 
     // Stage execution result
@@ -50,24 +49,28 @@ export default class Stage {
         return this.status === 'done';
     }
 
-    constructor({ data, init }: EntityAPI, parent: Stage | null, source: Stage | null, arg?: Dict) {
+    constructor({ data, server, init }: EntityAPI, parent?: Stage, source?: Stage, arg?: Dict) {
         // Initialize component properties
         this.#data = data;
-        // this.#server = server;
+        this.#server = server;
 
         if (init(this)) {
             // Restored from saved state and does not need initialization
             return;
         }
         // Initialize component data
-        data.arg = copy(arg) || {};
-        data.props = {};
-        data.history = [];
-        data.running = [];
-        data.parent = parent;
-        data.source = source;
-        data.status = 0;
-        data.step = 0;
+        this.#data.arg = copy(arg) || {};
+        this.#data.props = {};
+        this.#data.history = [];
+        this.#data.running = [];
+        if (parent) {
+            this.#data.parent = parent;
+        }
+        if (source) {
+            this.#data.source = source;
+        }
+        this.#data.status = StageStatus.None;
+        this.#data.step = 0;
     }
 
     // Update component properties.

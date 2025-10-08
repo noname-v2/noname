@@ -4,6 +4,7 @@ import Library from './library';
 import Tree from './tree';
 import { apply, isDict } from '../utils';
 import { getStyleString } from './css';
+import { StageStatus } from './stage';
 import type Stage from './stage';
 import type { RemoteClient, ChannelName } from './channel';
 
@@ -72,7 +73,7 @@ export default class Server extends Logger {
     start() {
         // Add a default client if none exists
         this.log('Server started');
-        
+
         // Add channels
         this.#channel.add(this.#options.channel || this.type);
 
@@ -81,6 +82,7 @@ export default class Server extends Logger {
         this.#css = getStyleString(this.#lib.refs('component'));
 
         // Create root stage
+        this.#execute(this.#lib.create('stage', 'app'))
         // from here: load state, etc.
     }
 
@@ -125,25 +127,43 @@ export default class Server extends Logger {
         const lib = this.#lib;
         const ref = lib.ref(stage) as StageDefinition;
         let status = lib.get(stage, 'status');
-        while (status < 11) { // while not done
-            if (status === 3 || status === 6) { // main
-                const result = await ref[status === 3 ? 'main' : lib.get(stage, 'executing')].call(stage);
+        while (status < StageStatus.Done) { // while not done
+            this.log('Executing', lib.tag(stage), stage.status, lib.get(stage, 'executing') ?? '', lib.get(stage, 'toExecute') ?? '');
+            if (status === StageStatus.Main) { // main
+                const exec = lib.get(stage, 'executing') ?? 'main';
+                const result = await ref[exec].call(stage);
                 if (typeof result === 'string') {
                     // Create and execute a child stage
-                    lib.set(stage, 'executing', result);
-                    status = 3;
-                }
-                else {
-                    // Main execution finished with result
-                    if (isDict(result)) {
-                        lib.set(stage, 'result', result);
+                    if (exec === 'main') {
+                        status = StageStatus.None;
+                        lib.set(stage, 'executing', result);
                     }
-                    lib.set(stage, 'executing');
-                    status = 8; // Skip child stages and go to end
+                    else {
+                        lib.set(stage, 'toExecute', result);
+                    }
+                }
+                else if (isDict(result)) {
+                    // Main execution finished with result
+                    lib.set(stage, 'result', result);
                 }
             }
-            else if (status > 0 && status < 6) { // before, begin, end, after
+            else if (status > StageStatus.None) {
+                // Trigger `before`, `begin`, `end`, `after`
                 await this.#trigger();
+                if (status === StageStatus.After) {
+                    const toExecute = lib.get(stage, 'toExecute');
+                    if (toExecute) {
+                        // Execute the function specified by toExecute
+                        lib.set(stage, 'executing', toExecute);
+                        lib.set(stage, 'toExecute');
+                        status = StageStatus.None;
+                    }
+                    else if (lib.get(stage, 'executing')) {
+                        // Finished executing child stages, trigger `end` and `after` for main
+                        lib.set(stage, 'executing');
+                        status = StageStatus.Main;
+                    }
+                }
             }
             this.#flush();
             lib.set(stage, 'status', ++status);
@@ -158,8 +178,8 @@ export default class Server extends Logger {
 
     // Flatten and move stages in running to history
     #flush() {
-        const history = this.#lib.get(this.#stage, '#history');
-        const running = this.#lib.get(this.#stage, '#running');
+        const history = this.#lib.get(this.#stage, 'history');
+        const running = this.#lib.get(this.#stage, 'running');
         for (const child of running) {
             history.push(this.#flatten(child));
         }
