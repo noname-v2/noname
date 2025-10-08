@@ -39,7 +39,7 @@ export const elementProps = {
     onDrop: null as Dict | null, // TODO: drag and drop event handler
     // Note: event handlers are string names of methods in the Component class, not actual functions
     // because functions cannot be serialized to/from JSON.
-};
+} as const;
 
 // Subset of elementProps that are event handlers
 export const eventHandlers = [
@@ -50,4 +50,4 @@ export const eventHandlers = [
 export const nodeProps = {
     exclusive: null as string[] | null, // client ids that can see this component, undefined or empty for all
     slot: null as number | null, // slot index as identifier when siblings have the same tag
-};
+} as const;

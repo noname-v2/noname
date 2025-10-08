@@ -70,10 +70,15 @@ export default class Library {
     }
 
     // Set data of an entity
-    set(target: any, key: string, value: any) {
+    set(target: any, key: string, value?: any) {
         const entry = this.#instances.get(target);
         if (entry) {
-            entry[3][key] = value;
+            if (value === undefined) {
+                delete entry[3][key];
+            }
+            else {
+                entry[3][key] = value;
+            }
         }
     }
 

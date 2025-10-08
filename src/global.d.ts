@@ -57,11 +57,10 @@ declare global {
     }
 
     //  Stage type
+    type StageFunction = (this: Stage) => Promise<any> | any;
     interface StageDefinition {
-        run?: (this: Stage, ...args: any[]) => Promise<any> | any; // Main execution function
-        seq?: string[]; // Sequence of sub-stages to be executed in order
-        silent?: boolean; // Do not trigger any event
-        sub?: Dict<StageDefinition>; // Sub-stages
+        main: StageFunction; // Main execution function
+        [key: string]: StageFunction; // Conditional execution branches activated by this.goto()
     }
 
     // Initialization function for the data of Entity / Component / Stage

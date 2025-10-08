@@ -2,6 +2,7 @@ import { isDict, apply, toKebab } from "../utils";
 import { elementProps, dimensionProps, nodeProps } from "../constants";
 import type Server from './server';
 import type Component from './component';
+import type Library from "./library";
 import { propsToElement } from "./css";
 
 export default class Tree {
@@ -36,7 +37,10 @@ export default class Tree {
     #server: Server;
 
     // UI object for creating components
-    #ui!: UI;
+    #ui: UI;
+
+    // Reference to Library instance
+    #lib: Library;
 
     // Getters for Component class
     get rendering() { return this.#rendering; }
@@ -47,15 +51,16 @@ export default class Tree {
     // Getter for UI object for Server
     get ui() { return this.#ui; }
 
-    constructor(server: Server) {
+    constructor(server: Server, lib: Library) {
         this.#server = server;
-        this.#ui = new Proxy(server.lib.refs('component'), {
+        this.#lib = lib;
+        this.#ui = new Proxy(lib.refs('component'), {
             get: (target, tag: string) => {
                 if (!(tag in target)) {
                     target[tag] = { native: true };
                 }
                 return ((...args) => {
-                    const cmp = server.lib.create('component', tag, this, ...args);
+                    const cmp = lib.create('component', tag, this, lib, ...args);
                     this.#components.add(cmp);
                     return cmp;
                 }) as UI[string];
@@ -77,10 +82,10 @@ export default class Tree {
         }
 
         // Clear children's references recursively
-        this.#server.lib.get(cmp, 'children')?.forEach((child: Component) => this.#unlink(child));
+        this.#lib.get(cmp, 'children')?.forEach((child: Component) => this.#unlink(child));
 
         // Clear its own references
-        this.#server.lib.delete(cmp);
+        this.#lib.delete(cmp);
         this.#components.delete(cmp);
     }
 
@@ -110,7 +115,7 @@ export default class Tree {
 
         // Components that have already been rendered in the current sync() call
         const rendered = new Set<Component>();
-        const lib = this.#server.lib;
+        const lib = this.#lib;
 
         while (true) {
             // Remove references to unlinked components
@@ -187,7 +192,7 @@ export default class Tree {
 
     init(id: string, css: string) {
         const msg: any = { css: css };
-        const lib = this.#server.lib;
+        const lib = this.#lib;
         for (const cmp of this.#components) {
             const tagName = (lib.ref(cmp)?.native ? '' : 'nn-') + toKebab(lib.tag(cmp)!);
             msg[lib.id(cmp)] = [propsToElement(lib.get(cmp, 'props'), this.#server), lib.id(lib.get(cmp, 'parent')) ?? '-', tagName];
@@ -230,14 +235,14 @@ export default class Tree {
             else if (typeof update === 'string') {
                 // Apply queued props change immediately since parent is changed
                 if (isDict(current)) {
-                    apply(this.#server.lib.get(cmp, 'props'), current);
+                    apply(this.#lib.get(cmp, 'props'), current);
                 }
                 this.#pending.set(cmp, update);
             }
             else if (typeof current === 'string') {
                 // Update props directly if parent is changed
                 if (isDict(update)) {
-                    apply(this.#server.lib.get(cmp, 'props'), update);
+                    apply(this.#lib.get(cmp, 'props'), update);
                 }
             }
             else if (isDict(current) && isDict(update)) {
@@ -256,8 +261,8 @@ export default class Tree {
 
     // Mark a component and its children as resolved / unresolved
     #unresolve(cmp: Component) {
-        for (const child of this.#server.lib.get(cmp, 'children')) {
-            if (this.#server.lib.get(child, 'source') === this.#rendering) {
+        for (const child of this.#lib.get(cmp, 'children')) {
+            if (this.#lib.get(child, 'source') === this.#rendering) {
                 this.#resolving.add(cmp);
                 this.#unresolve(child);
             }
@@ -266,7 +271,7 @@ export default class Tree {
 
     // Render a component by setting up context and calling its render() method
     #render(cmp: Component) {
-        const lib = this.#server.lib;
+        const lib = this.#lib;
         if (this.#rendering !== null || this.#resolved.size || this.#resolving.size) {
             this.#server.warn("An component is already being rendered: " +
                 lib.tag(this.#rendering) + lib.id(this.#rendering) + " <- " +

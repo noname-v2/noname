@@ -2,6 +2,7 @@ import translate from "./locale";
 import { isDict, apply } from "../utils";
 import type Server from "./server";
 import type Tree from "./tree";
+import type Library from "./library";
 
 // From here: consider only keeping base Component and Stage class?
 // Component callbacks only have two types:
@@ -35,12 +36,16 @@ export default class Component {
     // Reference to the Tree instance
     #tree: Tree;
 
-    constructor({ data, init, server }: EntityAPI, tree: Tree,
+    // Reference to the Library instance
+    #lib: Library;
+
+    constructor({ data, init, server }: EntityAPI, tree: Tree, lib: Library,
         ...args: (string | number | Component | Component[] | Partial<ComponentProps>)[]) {
         // Initialize component properties
         this.#data = data;
         this.#server = server;
         this.#tree = tree;
+        this.#lib = lib;
 
         if (init(this)) {
             // Restored from saved state and does not need initialization
@@ -93,7 +98,7 @@ export default class Component {
     query(tag: string, slot?: number): Component | null {
         // loop over direct children first
         for (const child of this.#data.children) {
-            if (this.#server.lib.tag(child) === tag && (slot === undefined || this.#server.lib.get(child, 'props').slot === slot)) {
+            if (this.#lib.tag(child) === tag && (slot === undefined || this.#lib.get(child, 'props').slot === slot)) {
                 return child;
             }
         }
@@ -118,7 +123,7 @@ export default class Component {
 
     // Append a component to its children (single target).
     #append(target: Component) {
-        const lib = this.#server.lib;
+        const lib = this.#lib;
         const tree = this.#tree;
         this.#server.log("Appending component", lib.id(target), "to", lib.id(this));
         const rendering = tree.rendering;
@@ -213,7 +218,7 @@ export default class Component {
             return false;
         }
         if (this.#data.parent) {
-            const children = this.#server.lib.get(this.#data.parent, 'children');
+            const children = this.#lib.get(this.#data.parent, 'children');
             if (children.includes(this)) {
                 children.splice(children.indexOf(this), 1);
             }
@@ -225,7 +230,7 @@ export default class Component {
     // Check if a new component matches an existing one
     #match(a: Component, b: Component) {
         // Check constructor
-        const lib = this.#server.lib;
+        const lib = this.#lib;
         if (lib.tag(a) !== lib.tag(b)) {
             return false;
         }
