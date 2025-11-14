@@ -2,6 +2,7 @@ import Logger from '../logger';
 import Channel from './channel';
 import Library from './library';
 import Tree from './tree';
+import type Component from './component';
 import { apply, isDict } from '../utils';
 import { getStyleString } from './css';
 import { StageStatus } from './stage';
@@ -32,6 +33,12 @@ export default class Server extends Logger {
 
     // Current running stage
     #stage!: Stage;
+
+    // Root app component
+    #app!: Component;
+    
+    // Main board component
+    #board!: Component;
 
     // Expose objects useful for entities
     get ui() { return this.#tree.ui; }
@@ -78,7 +85,10 @@ export default class Server extends Logger {
         this.#channel.add(this.#options.channel || this.type);
 
         // Initialize the root stage and component
-        this.#tree.createRoot(this.ui.app());
+        this.#app = this.ui.app();
+        this.#board = this.ui.board();
+        this.#tree.createRoot(this.#app);
+        this.#app.query('main')?.append(this.#board);
         this.#css = getStyleString(this.#lib.refs('component'));
 
         // Create root stage

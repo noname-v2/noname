@@ -133,8 +133,8 @@ export default class Component {
             return;
         }
 
-        if (target.#data.parent) {
-            if (target.#data.source !== rendering) {
+        if (lib.get(target, 'parent')) {
+            if (lib.get(target, 'source') !== rendering) {
                 this.#server.warn("Component can only be moved from the same context as where it is created.", this, target);
                 return;
             }
@@ -161,7 +161,7 @@ export default class Component {
                     }
 
                     // update child props
-                    tree.tick(child, target.#data.props);
+                    tree.tick(child, lib.get(target, 'props'));
 
                     // Remove temporary component
                     tree.tick(target, 'x');

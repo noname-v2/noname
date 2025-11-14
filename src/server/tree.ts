@@ -284,7 +284,13 @@ export default class Tree {
         this.#rendering = cmp;
         this.#unresolve(cmp);
         const n = this.#resolving.size;
-        lib.ref(cmp)?.render?.call(cmp, this.#ui);
+        const children = lib.ref(cmp)?.render?.call(lib.get(cmp, 'props'), this.#ui);
+        if (Array.isArray(children)) {
+            cmp.append(...children);
+        }
+        else if (children) {
+            cmp.append(children!);
+        }
 
         // Remove outdated children
         for (const child of this.#resolving) {

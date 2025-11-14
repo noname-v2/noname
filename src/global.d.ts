@@ -49,7 +49,7 @@ declare global {
     // Partial<ComponentProps>: component properties
     type UI = Dict<(...args: (string | number | Component | Component[] | Partial<ComponentProps>)[]) => Component>;
     interface ComponentDefinition {
-        render?: (this: Component, ui: UI) => void;
+        render?: (this: ComponentProps, ui: UI) => Component | Component[];
         popup?: (this: Component, ui: UI) => void;
         css?: CSSDict;
         mixin?: string[];
