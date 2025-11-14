@@ -96,6 +96,9 @@ export default class Component {
 
     // Get child component by tag and optionally slot index
     query(tag: string, slot?: number): Component | null {
+        // Ensure component up-to-date
+        this.#tree.sync();
+
         // loop over direct children first
         for (const child of this.#data.children) {
             if (this.#lib.tag(child) === tag && (slot === undefined || this.#lib.get(child, 'props').slot === slot)) {
@@ -214,7 +217,8 @@ export default class Component {
     #detach() {
         const rendering = this.#tree.rendering;
         if (this.#data.source !== rendering) {
-            this.#server.warn("Component can only be detached from the same context as where it is created", this, rendering);
+            this.#server.warn("Component can only be detached from the same context as where it is created ",
+                this.#lib.tag(this), this.#lib.id(this), this.#lib.tag(this.#data.source), this.#lib.id(this.#data.source), this.#lib.tag(rendering), this.#lib.id(rendering));
             return false;
         }
         if (this.#data.parent) {

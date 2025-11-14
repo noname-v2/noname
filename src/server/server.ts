@@ -88,7 +88,7 @@ export default class Server extends Logger {
         this.#app = this.ui.app();
         this.#board = this.ui.board();
         this.#tree.createRoot(this.#app);
-        this.#app.query('main')?.append(this.#board);
+        this.#app.query('main')!.append(this.#board);
         this.#css = getStyleString(this.#lib.refs('component'));
 
         // Create root stage

@@ -12,6 +12,7 @@ export default class Logger {
     }
 
     warn(message?: any, ...optionalParams: any[]) {
+        console.warn(message, ...optionalParams);
         if (this.debug) {
             if (typeof message === 'string') {
                 throw new Error(message);
@@ -19,13 +20,11 @@ export default class Logger {
             else {
                 throw message;
             }
-        }
-        else {
-            console.warn(message, ...optionalParams);
         }
     }
 
     error(message?: any, ...optionalParams: any[]) {
+        console.error(message, ...optionalParams);
         if (this.debug) {
             if (typeof message === 'string') {
                 throw new Error(message);
@@ -33,9 +32,6 @@ export default class Logger {
             else {
                 throw message;
             }
-        }
-        else {
-            console.error(message, ...optionalParams);
         }
     }
 }

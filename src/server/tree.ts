@@ -106,7 +106,8 @@ export default class Tree {
     }
 
     // Process pending updates and send to main thread
-    #sync() {
+    // Either scheduled by tick() for force synced by component.query().
+    sync() {
         if (!this.#pending || this.#syncing) {
             return;
         }
@@ -221,7 +222,7 @@ export default class Tree {
     tick(cmp: Component, update: string | ComponentProps) {
         if (this.#pending === null) {
             this.#pending = new Map();
-            queueMicrotask(() => this.#sync());
+            queueMicrotask(() => this.sync());
         }
         if (this.#pending.has(cmp)) {
             // merge updates
@@ -263,7 +264,7 @@ export default class Tree {
     #unresolve(cmp: Component) {
         for (const child of this.#lib.get(cmp, 'children')) {
             if (this.#lib.get(child, 'source') === this.#rendering) {
-                this.#resolving.add(cmp);
+                this.#resolving.add(child);
                 this.#unresolve(child);
             }
         }
