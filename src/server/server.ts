@@ -37,8 +37,8 @@ export default class Server extends Logger {
     // Root app component
     #app!: Component;
     
-    // Main board component
-    #board!: Component;
+    // // Main board component
+    // #board!: Component;
 
     // Expose objects useful for entities
     get ui() { return this.#tree.ui; }
@@ -86,9 +86,16 @@ export default class Server extends Logger {
 
         // Initialize the root stage and component
         this.#app = this.ui.app();
-        this.#board = this.ui.board();
+        // this.#board = this.ui.board();
         this.#tree.createRoot(this.#app);
-        this.#app.query('main')!.append(this.#board);
+        // this.#app.query('main')!.append(this.#board);
+        // from here:
+        // task1: figure out why text node def is not properly matched
+        // task2: avoid or defer re-rendering everything when query() is called (avoid rendering component <board> without parent)
+        // task3: separate component.add (for render()) and component.append (for user)
+        // task4: when calling unresolve(), separate components from add() and append()
+        // task5: ui passed to render() should not provide the full component, ui.xxx() should return component id instead
+        // task6: instead of using ui.xxx(), make user explicitly call create('xxx')
         this.#css = getStyleString(this.#lib.refs('component'));
 
         // Create root stage

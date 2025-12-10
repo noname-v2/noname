@@ -80,6 +80,7 @@ export default class Component {
             }
             else if (typeof arg === "string") {
                 // Append text node
+                server.log('Appending text node:', translate(arg));
                 this.append(server.ui.span({ innerHTML: translate(arg) }));
             }
             else if (typeof arg === "number") {
@@ -157,6 +158,8 @@ export default class Component {
                     tree.resolving.delete(child);
 
                     // match child elements
+                    this.#server.log(`Reusing component <${lib.tag(child)}> id=${lib.id(child)} for appended <${lib.tag(target)}> id=${lib.id(target)}`);
+
                     for (const targetChild of lib.get(target, 'children')) {
                         if (lib.get(targetChild, 'source') === rendering) {
                             child.append(targetChild);
@@ -168,7 +171,6 @@ export default class Component {
 
                     // Remove temporary component
                     tree.tick(target, 'x');
-                    this.#server.log(`Reusing component <${lib.tag(child)}> id=${lib.id(child)}`);
                     return;
                 }
             }
