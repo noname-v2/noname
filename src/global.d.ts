@@ -9,7 +9,6 @@ import type { ChannelName } from './server/channel';
 
 declare global {
     // Plain object
-    type Plain = number | string | boolean | null | Plain[] | { [key: string]: Plain };
     type Dict<T = any> = { [key: string]: T };
 
     // CSS declaration
