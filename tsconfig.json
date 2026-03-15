@@ -6,15 +6,21 @@
 	  "module": "ESNext",
 	  "skipLibCheck": true,
 	  "rootDir": "./src",
-	  "outDir": "./build",
+	  "outDir": "./dist",
 	  "moduleResolution": "bundler",
+	  "isolatedModules": true,
 
 	  /* Linting */
 	  "strict": true,
 	  "noUnusedLocals": true,
 	  "noUnusedParameters": true,
 	  "noFallthroughCasesInSwitch": true,
-	  "noImplicitReturns": true
+	  "noImplicitReturns": true,
+	  "noUncheckedIndexedAccess": true,
+	  "exactOptionalPropertyTypes": true,
+	  "noPropertyAccessFromIndexSignature": true,
+	  "noImplicitOverride": true,
+	  "allowUnreachableCode": false
 	}
   }
   

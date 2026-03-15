@@ -2,32 +2,18 @@
   "name": "noname-v2",
   "version": "1.0.0",
   "description": "Noname 2",
-  "main": "index.js",
   "keywords": [
     "card",
     "game",
     "mobile"
   ],
   "scripts": {
-    "clean": "rm -rf src/build && rm -rf build && rm -rf dist",
-    "build": "sh scripts/build.sh",
-    "electron": "npx electron scripts/electron.js",
-    "serve": "npx http-server .",
-    "cb": "npm run clean-build",
-    "debug": "sh scripts/build.sh debug && npm run electron",
-    "dev": "sh scripts/build.sh debug"
+    "clean": "rm -rf dist",
+    "build": "rm -rf dist && npx tsc"
   },
   "devDependencies": {
-    "@capacitor/cli": "^7.4.3",
-    "electron": "^33.3.1",
-    "express": "^5.1.0",
-    "portfinder": "^1.0.37",
-    "rollup": "^4.31.0",
     "typescript": "^5.7.3"
   },
   "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "@capacitor/core": "^7.4.3"
-  }
+  "license": "ISC"
 }

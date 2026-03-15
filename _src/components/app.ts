@@ -10,16 +10,7 @@ export default {
                 scale: 'var(--zoom-scale)',
                 'nn-main div.down': { transform: 'scale(0.95)' }
             },
-            render(ui) {
-                // from here: manage append() with render()
-                return [
-                    ui.background(),
-                    ui.main(
-                        ui.board()
-                    ),
-                    ui.foreground()
-                ];
-            }
+            children: ['background', 'main', 'foreground'],
         }
     }
 } as Extension;

@@ -4,6 +4,28 @@ import type Server from "./server";
 import type Tree from "./tree";
 import type Library from "./library";
 
+// Actually from here:
+// Discard the ui.xxx() syntax, let component only declare its children and properties
+// Child components should have enough information in their properties to determine their behavior (e.g. a button with {action:'attack'} should trigger attack action when clicked)
+// A component has internal children and external children (Map<source, children>, src/components/app.ts)
+
+// class Arena extends Component {
+//     @child('panel')
+//     sidebar() {
+//             return {}
+//     }
+
+//     @child('main')
+//     main() {
+ //           return {}   
+//     }
+
+//     @child('popup')
+//     popup() {
+//       return null; // no popup by default
+//     }
+// }
+
 // From here: consider only keeping base Component and Stage class?
 // Component callbacks only have two types:
 // 1) determined by current Stage
